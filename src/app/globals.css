@@ -93,9 +93,28 @@ body {
 /* Sidebar                                                             */
 /* ------------------------------------------------------------------ */
 .side {
-  width: 72px;
+  width: 260px;
+  transition: width 0.2s ease;
   background: linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 94%, var(--bg)) 100%);
   border-right: 1px solid var(--border);
+}
+.side-collapsed {
+  width: 72px;
+}
+.sidebar-toggle {
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  flex-shrink: 0;
+  border-radius: 8px;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 10%, transparent);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.sidebar-toggle:hover {
+  color: var(--text);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 .brand-mark {
@@ -114,14 +133,20 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 0.65rem;
   padding: 0.6rem;
   border-radius: 11px;
+  font-size: 0.8125rem;
+  font-weight: 550;
   color: var(--muted);
+  text-align: left;
   transition: background 0.18s ease, color 0.18s ease;
 }
-.nav-item span:not(.nav-icon) {
+.nav-item-collapsed span:not(.nav-icon) {
   display: none;
+}
+.nav-item-collapsed {
+  justify-content: center;
 }
 .nav-item:hover {
   color: var(--text);
