@@ -93,14 +93,9 @@ body {
 /* Sidebar                                                             */
 /* ------------------------------------------------------------------ */
 .side {
+  width: 72px;
   background: linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 94%, var(--bg)) 100%);
   border-right: 1px solid var(--border);
-}
-@media (max-width: 1023px) {
-  .side {
-    border-right: 0;
-    border-bottom: 1px solid var(--border);
-  }
 }
 
 .brand-mark {
@@ -119,23 +114,22 @@ body {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.45rem 0.7rem 0.45rem 0.55rem;
+  justify-content: center;
+  padding: 0.6rem;
   border-radius: 11px;
-  font-size: 0.8125rem;
-  font-weight: 550;
   color: var(--muted);
-  text-align: left;
   transition: background 0.18s ease, color 0.18s ease;
+}
+.nav-item span:not(.nav-icon) {
+  display: none;
 }
 .nav-item:hover {
   color: var(--text);
-  background: color-mix(in srgb, var(--accent) 7%, transparent);
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .nav-item[aria-current="page"] {
   color: var(--accent-strong);
-  font-weight: 600;
-  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 .nav-item[aria-current="page"]::before {
   content: "";
@@ -156,13 +150,12 @@ body {
 .nav-icon {
   display: grid;
   place-items: center;
-  width: 1.75rem;
-  height: 1.75rem;
+  width: 2rem;
+  height: 2rem;
   flex-shrink: 0;
   border-radius: 9px;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--muted) 12%, transparent);
-  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+  color: inherit;
+  background: transparent;
 }
 .nav-item[aria-current="page"] .nav-icon {
   color: #fff;

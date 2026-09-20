@@ -62,22 +62,17 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <aside className="side z-40 flex w-64 shrink-0 flex-col sticky top-0 h-screen">
-      <div className="flex items-center gap-3 px-4 py-4 lg:px-5 lg:py-5">
+    <aside className="side z-40 flex shrink-0 flex-col sticky top-0 h-screen">
+      <div className="flex items-center justify-center px-2 py-4">
         <div className="brand-mark">A</div>
-        <div className="leading-tight">
-          <div className="text-sm font-semibold tracking-tight text-slate-900">Apex Asset Management</div>
-          <div className="text-[11px] text-slate-500">HDFC Bank mandate workstation</div>
-        </div>
       </div>
 
       <nav
         aria-label="Dashboard modules"
-        className="no-scrollbar flex flex-1 flex-col gap-0 overflow-y-auto px-3 pb-3"
+        className="no-scrollbar flex flex-1 flex-col items-center gap-0 overflow-y-auto px-2 pb-3"
       >
         {GROUPS.map((group) => (
-          <div key={group.label} className="mb-4 flex flex-col gap-1">
-            <div className="px-3 pb-1 text-[11px] font-medium text-slate-400">{group.label}</div>
+          <div key={group.label} className="mb-2 flex w-full flex-col items-center gap-1">
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
@@ -100,18 +95,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         ))}
       </nav>
 
-      <div className="p-3">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] leading-relaxed">
-          <div className="flex items-center gap-1.5 font-semibold text-emerald-600">
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>GIPS audit level 1</span>
-          </div>
-          <div className="mt-1 text-slate-500">
-            Rf 6.80% (10Y G-Sec)
-            <br />
-            SEBI Reg: INH000001234
-          </div>
-        </div>
+      <div className="flex justify-center p-3">
+        <ShieldCheck className="h-4 w-4 text-emerald-500" />
       </div>
     </aside>
   );
