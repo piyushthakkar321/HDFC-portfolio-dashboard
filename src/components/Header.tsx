@@ -15,7 +15,7 @@ import {
   Download,
 } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
-import { ThemeToggle } from "./themetoggle.tsx";
+import { ThemeToggle } from "./ThemeToggle.tsx";
 
 export type DashboardTab =
   | "executive"
