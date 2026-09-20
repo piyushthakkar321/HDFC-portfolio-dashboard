@@ -62,7 +62,7 @@ interface SidebarProps {
 
 export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => {
   return (
-    <aside className="side z-40 flex shrink-0 flex-col lg:sticky lg:top-0 lg:h-screen lg:w-64">
+    <aside className="side z-40 flex w-64 shrink-0 flex-col sticky top-0 h-screen">
       <div className="flex items-center gap-3 px-4 py-4 lg:px-5 lg:py-5">
         <div className="brand-mark">A</div>
         <div className="leading-tight">
@@ -73,11 +73,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
 
       <nav
         aria-label="Dashboard modules"
-        className="no-scrollbar flex gap-1 overflow-x-auto px-3 pb-3 lg:flex-1 lg:flex-col lg:gap-0 lg:overflow-y-auto"
+        className="no-scrollbar flex flex-1 flex-col gap-0 overflow-y-auto px-3 pb-3"
       >
         {GROUPS.map((group) => (
-          <div key={group.label} className="flex gap-1 lg:mb-4 lg:flex-col">
-            <div className="hidden px-3 pb-1 text-[11px] font-medium text-slate-400 lg:block">{group.label}</div>
+          <div key={group.label} className="mb-4 flex flex-col gap-1">
+            <div className="px-3 pb-1 text-[11px] font-medium text-slate-400">{group.label}</div>
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
@@ -86,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
                   key={item.id}
                   onClick={() => setActiveTab(item.id)}
                   aria-current={active ? "page" : undefined}
-                  className="nav-item shrink-0 whitespace-nowrap lg:w-full"
+                  className="nav-item w-full whitespace-nowrap"
                 >
                   <span className="nav-icon">
                     <Icon className="h-3.5 w-3.5" />
@@ -100,7 +100,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
         ))}
       </nav>
 
-      <div className="hidden p-3 lg:block">
+      <div className="p-3">
         <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] leading-relaxed">
           <div className="flex items-center gap-1.5 font-semibold text-emerald-600">
             <ShieldCheck className="h-3.5 w-3.5" />

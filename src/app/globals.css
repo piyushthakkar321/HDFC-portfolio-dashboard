@@ -12,14 +12,14 @@
 /* Tokens                                                              */
 /* ------------------------------------------------------------------ */
 :root {
-  --bg: #f3f5fa;
+  --bg: #faf9f6;
   --surface: #ffffff;
-  --surface-2: #f4f6fb;
-  --border: #e4e8f1;
-  --text: #0b1220;
-  --muted: #667085;
-  --accent: #2151d6;
-  --accent-strong: #1d43b8;
+  --surface-2: #f7f5f0;
+  --border: #ece7dc;
+  --text: #1c1917;
+  --muted: #78716c;
+  --accent: #b45309;
+  --accent-strong: #92400e;
   --shadow:
     0 0 0 1px rgba(16, 24, 40, 0.02), 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
   --shadow-hover:
