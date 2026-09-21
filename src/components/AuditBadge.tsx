@@ -92,7 +92,7 @@ export const AuditBadge: React.FC<AuditBadgeProps> = ({
           cfg.bg
         } ${cfg.text} ${cfg.border} ${
           size === "xs" ? "text-[9.5px] px-1.5 py-[3px]" : "text-[11px] px-2 py-1"
-        } opacity-80 transition hover:opacity-100 cursor-help`}
+        } transition hover:brightness-95 cursor-help`}
         title={cfg.desc}
       >
         <span>{customText || cfg.code}</span>
@@ -100,14 +100,30 @@ export const AuditBadge: React.FC<AuditBadgeProps> = ({
       </button>
 
       {open && (
-        <div className="absolute z-50 bottom-full left-0 mb-1.5 w-64 rounded-[9px] border border-[#9a7433]/30 bg-[#101827] p-2.5 text-xs text-[#e9e6df] shadow-[0_18px_36px_-20px_rgba(16,18,29,0.9)] pointer-events-none">
-          <div className="flex items-center justify-between pb-1 mb-1 border-b border-slate-700 text-[11px] font-bold text-slate-300">
+        <div
+          className="absolute z-50 bottom-full left-0 mb-1.5 w-64 rounded-[9px] border p-2.5 text-xs pointer-events-none"
+          style={{
+            background: "var(--ink)",
+            borderColor: "var(--border-strong)",
+            color: "#e8ecf3",
+            boxShadow: "0 18px 36px -20px rgba(13,17,23,0.85)",
+          }}
+        >
+          <div
+            className="flex items-center justify-between pb-1 mb-1 border-b text-[11px] font-bold"
+            style={{ borderColor: "var(--border-strong)", color: "#c3cad6" }}
+          >
             <span>{cfg.label}</span>
-            <span className="font-mono text-[9px] px-1 bg-slate-800 rounded">
+            <span
+              className="font-mono text-[9px] px-1 rounded"
+              style={{ background: "rgba(255,255,255,0.08)" }}
+            >
               [{cfg.code}]
             </span>
           </div>
-          <p className="text-[11px] text-slate-300 leading-relaxed">{cfg.desc}</p>
+          <p className="text-[11px] leading-relaxed" style={{ color: "#c3cad6" }}>
+            {cfg.desc}
+          </p>
         </div>
       )}
     </div>
