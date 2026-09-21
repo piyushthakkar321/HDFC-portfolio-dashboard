@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+export const preferredRegion = "bom1";
 import { NextResponse } from "next/server";
 
 // NSE's public quote endpoint is unofficial and requires a session cookie
