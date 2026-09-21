@@ -7,7 +7,9 @@ export type ClassificationType =
   | "HISTORICAL_OBSERVATION"
   | "CALCULATED_METRIC"
   | "SCENARIO_ASSUMPTION"
-  | "INTERPRETATION";
+  | "INTERPRETATION"
+  | "SIMULATED"
+  | "ESTIMATE";
 
 interface AuditBadgeProps {
   type: ClassificationType;
@@ -16,7 +18,7 @@ interface AuditBadgeProps {
   customText?: string;
 }
 
-const BADGE_CONFIG: Record<
+export const BADGE_CONFIG: Record<
   ClassificationType,
   { label: string; code: string; bg: string; text: string; border: string; desc: string }
 > = {
@@ -51,6 +53,22 @@ const BADGE_CONFIG: Record<
     text: "text-purple-700",
     border: "border-purple-200",
     desc: "Qualitative expert analysis and opinion from the Investment Committee or Equity Research Analyst. Fiduciary disclaimer applies.",
+  },
+  SIMULATED: {
+    label: "Simulated / Illustrative",
+    code: "SIM",
+    bg: "bg-cyan-50",
+    text: "text-cyan-800",
+    border: "border-cyan-200",
+    desc: "Output of a deterministic simulation or illustrative model input (price paths, portfolio returns and the ratios derived from them). Not an audited NAV or an exchange record.",
+  },
+  ESTIMATE: {
+    label: "Estimate (not audited)",
+    code: "EST",
+    bg: "bg-orange-50",
+    text: "text-orange-800",
+    border: "border-orange-200",
+    desc: "Forward-looking or consensus figure (for example FY25E). It is a model estimate and has not been audited or reported by the company.",
   },
 };
 

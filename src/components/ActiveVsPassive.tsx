@@ -27,6 +27,7 @@ import {
   ReferenceLine,
 } from "recharts";
 import { AuditBadge } from "./AuditBadge";
+import { METRICS, NET_ALPHA, inr, pct, sgn, spct } from "@/data/metrics";
 import {
   generateTimeSeries,
   INSTITUTIONAL_TEARSHEET,
@@ -53,6 +54,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
     : INSTITUTIONAL_TEARSHEET.filter((m) => m.category === selectedCategory);
 
   const benchmarkName = benchmark === "NIFTY_BANK" ? "Nifty Bank Index" : "Nifty 50 Index";
+  const comparatorKey = benchmark === "NIFTY_BANK" ? "benchmarkNiftyBank" : "benchmarkNifty50";
 
   return (
     <div className="space-y-6">
@@ -63,19 +65,19 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
             <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
               Head-to-Head Attribution: Active Mandate versus Passive ETF
             </h2>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Institutional performance audit across 4.25-year investment horizon. All metrics net of 25 bps transaction costs, STT, and management expenses.
+            Illustrative performance comparison, Jan 2021 – Mar 2025 (4.25 years). Model inputs net of assumed costs; not an audited NAV. Deltas are versus Nifty Bank unless stated.
           </p>
         </div>
 
         <div className="flex items-center gap-2 text-xs font-mono">
           <span className="px-2.5 py-1 bg-blue-50 text-blue-900 rounded font-semibold border border-blue-200">
-            NET ACTIVE ALPHA: +2.18% p.a.
+            NET ACTIVE ALPHA: {sgn(NET_ALPHA)}% p.a. vs NIFTY BANK
           </span>
           <span className="px-2.5 py-1 bg-emerald-50 text-emerald-900 rounded font-semibold border border-emerald-200">
-            INFORMATION RATIO: 0.74
+            INFORMATION RATIO: {METRICS.ir.active.toFixed(2)} (= {NET_ALPHA.toFixed(2)}% ÷ {METRICS.te.active.toFixed(2)}% TE)
           </span>
         </div>
       </div>
@@ -88,10 +90,10 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 Cumulative Wealth Accumulation (₹10,000,000 Base)
               </h3>
-              <AuditBadge type="CALCULATED_METRIC" />
+              <AuditBadge type="SIMULATED" />
             </div>
             <span className="text-xs text-slate-500">
-              Active Strategy terminal value ₹20,534,800 vs. Passive ETF ₹18,124,300 (+13.3% Wealth Delta).
+              {`Active Strategy terminal value ${inr(METRICS.terminal.active)} vs. Passive ETF ${inr(METRICS.terminal.passive)} (${spct((METRICS.terminal.active / METRICS.terminal.passive - 1) * 100, 1)} wealth delta). Plotted paths are simulated.`}
             </span>
           </div>
 
@@ -154,7 +156,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
               />
               <Line
                 type="monotone"
-                dataKey="benchmarkNiftyBank"
+                dataKey={comparatorKey}
                 stroke="#d97706"
                 strokeWidth={1.5}
                 strokeDasharray="4 4"
@@ -176,14 +178,14 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                   Underwater Drawdown Profile (Peak-to-Trough %)
                 </h4>
-                <AuditBadge type="CALCULATED_METRIC" />
+                <AuditBadge type="SIMULATED" />
               </div>
               <span className="text-[11px] text-slate-500">
-                Active max drawdown -23.40% vs. Passive -28.90%
+                {`Model max drawdown ${pct(METRICS.mdd.active)} vs Passive ${pct(METRICS.mdd.passive)}; plotted paths are simulated and scaled to these values`}
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              550 bps Capital Preservation
+              {Math.round(Math.abs(METRICS.mdd.active - METRICS.mdd.passive) * 100)} bps lower max drawdown
             </span>
           </div>
 
@@ -235,7 +237,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                   Rolling 1-Year Active Alpha (% p.a.)
                 </h4>
-                <AuditBadge type="CALCULATED_METRIC" />
+                <AuditBadge type="SIMULATED" />
               </div>
               <span className="text-[11px] text-slate-500">
                 Persistence of manager alpha over rolling 252-day windows
@@ -284,7 +286,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 Institutional Tear Sheet & Mathematical Attribution Ledger
               </h3>
-              <AuditBadge type="CALCULATED_METRIC" />
+              <AuditBadge type="SIMULATED" />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Click on any metric row to inspect exact formula definition, statutory inputs, and audit notes.
@@ -317,7 +319,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                 <th className="py-2.5 px-3">Category</th>
                 <th className="py-2.5 px-3 text-right">Active Strategy</th>
                 <th className="py-2.5 px-3 text-right">Passive Strategy</th>
-                <th className="py-2.5 px-3 text-right">{benchmarkName}</th>
+                <th className="py-2.5 px-3 text-right">Nifty Bank (mandate benchmark)</th>
                 <th className="py-2.5 px-3 text-right">Active Delta</th>
                 <th className="py-2.5 px-3 text-center">Classification</th>
               </tr>
@@ -411,7 +413,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                 <strong>Credit Cycle Inflection:</strong> When asset quality divergence between private and PSU lenders creates alpha opportunities.
               </li>
               <li>
-                <strong>Tail Risk Management:</strong> When downside semi-deviation controls (Sortino 0.98 vs 0.62) protect capital during macro drawdowns.
+                <strong>Tail Risk Management:</strong> When downside semi-deviation controls (Sortino {METRICS.sortino.active.toFixed(2)} vs {METRICS.sortino.passive.toFixed(2)}) protect capital during macro drawdowns.
               </li>
             </ul>
           </div>

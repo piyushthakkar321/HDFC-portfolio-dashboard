@@ -30,6 +30,7 @@ import {
 } from "recharts";
 import { AuditBadge } from "./AuditBadge";
 import { HDFC_FUNDAMENTALS } from "@/data/hdfcData";
+import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
 
 interface SavedScenario {
   id: number;
@@ -69,7 +70,7 @@ export const ScenarioAnalysis: React.FC = () => {
   const [showSaveModal, setShowSaveModal] = useState(false);
 
   // Current baseline from FY24 / FY25E
-  const currentPrice = 731.0;
+  const currentPrice = MARKET_SNAPSHOT.price;
   const baseAdvances = 2484862; // ₹ Cr
   const baseBvps = 300.4; // ₹ per share (bonus adjusted)
   const sharesOutstandingB = 15.41; // Billion shares post 1:1 bonus
@@ -134,7 +135,20 @@ export const ScenarioAnalysis: React.FC = () => {
     exitPbMultiple,
     horizonYears,
     transactionCostBps,
+    currentPrice,
   ]);
+
+  // Sensitivity grid: target price across NIM x loan growth, using the same model as above
+  const targetPriceFor = (g: number, m: number) => {
+    const adv = baseAdvances * Math.pow(1 + g / 100, horizonYears);
+    const netRev = (adv * (m / 100)) / (1 - 0.31);
+    const ppop = netRev - netRev * (costToIncome / 100);
+    const pat = (ppop - adv * (creditCostBps / 10000)) * (1 - 0.2517);
+    const bvps = baseBvps + (pat * horizonYears * 0.85 * 0.82) / (sharesOutstandingB * 100);
+    return bvps * exitPbMultiple;
+  };
+  const nimAxis = [-0.3, -0.15, 0, 0.15, 0.3].map((d) => Number((nim + d).toFixed(2)));
+  const growthAxis = [-4, -2, 0, 2, 4].map((d) => Number((loanGrowth + d).toFixed(1)));
 
   // Fetch scenarios from DB
   const fetchScenarios = async () => {
@@ -657,6 +671,68 @@ export const ScenarioAnalysis: React.FC = () => {
         </div>
       </div>
 
+      {/* Sensitivity grid and invalidation triggers */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 bg-white p-5 rounded-lg border border-slate-200 shadow-xs overflow-hidden">
+          <div className="flex items-center gap-2">
+            <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
+              Target price sensitivity: NIM × loan growth
+            </h3>
+            <AuditBadge type="SCENARIO_ASSUMPTION" />
+          </div>
+          <p className="text-xs text-slate-500 mt-0.5 mb-3">
+            Other levers stay at the current slider values. Colour shows upside or downside versus the reference price
+            ₹{currentPrice.toFixed(2)}; the outlined cell is the current scenario.
+          </p>
+          <div className="overflow-x-auto">
+            <table className="w-full text-center border-collapse text-xs font-mono">
+              <thead>
+                <tr className="bg-slate-100 text-slate-700 text-[11px]">
+                  <th className="py-2 px-3 text-left font-sans">Loan growth ↓ / NIM →</th>
+                  {nimAxis.map((m) => (
+                    <th key={m} className="py-2 px-3">{m.toFixed(2)}%</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {growthAxis.map((g, gi) => (
+                  <tr key={g}>
+                    <td className="py-2 px-3 text-left font-semibold bg-slate-50">{g.toFixed(1)}%</td>
+                    {nimAxis.map((m, mi) => {
+                      const v = targetPriceFor(g, m);
+                      const up = (v / currentPrice - 1) * 100;
+                      const center = gi === 2 && mi === 2;
+                      return (
+                        <td
+                          key={m}
+                          title={`${up >= 0 ? "+" : ""}${up.toFixed(1)}% vs reference price`}
+                          className={`py-2 px-3 font-semibold ${
+                            up >= 15 ? "bg-emerald-50 text-emerald-800" : up < 0 ? "bg-rose-50 text-rose-800" : "bg-slate-50 text-slate-800"
+                          } ${center ? "ring-2 ring-blue-500 ring-inset" : ""}`}
+                        >
+                          ₹{v.toFixed(0)}
+                        </td>
+                      );
+                    })}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs text-xs">
+          <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-1">Invalidation triggers</h3>
+          <p className="text-slate-500 mb-3">Suggested defaults for this scenario. The analyst should confirm them.</p>
+          <ul className="space-y-2 text-slate-700 leading-relaxed list-disc ml-4">
+            <li>NIM below {(nim - 0.25).toFixed(2)}% for two consecutive quarters.</li>
+            <li>Credit cost above {creditCostBps + 30} bps on a trailing-four-quarter basis.</li>
+            <li>Loan growth below {(loanGrowth - 3).toFixed(1)}% p.a. for two consecutive quarters.</li>
+            <li>Sector P/B re-rates below {(exitPbMultiple - 0.4).toFixed(2)}x, the level that removes the upside.</li>
+          </ul>
+        </div>
+      </div>
+
       {/* Saved Institutional Scenarios Table (PostgreSQL Data) */}
       <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs overflow-hidden">
         <div className="flex items-center justify-between mb-4">
@@ -758,6 +834,15 @@ export const ScenarioAnalysis: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {!loading && savedScenarios.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="py-6 px-3 text-center font-sans text-slate-500">
+                    No saved scenarios returned. Use the preset buttons above for the Base, Bull, Bear and Stress
+                    reference cases. If the store should already contain them, check DATABASE_URL and run
+                    drizzle-kit push.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

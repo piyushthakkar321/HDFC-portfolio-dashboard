@@ -27,6 +27,7 @@ import {
   Legend,
 } from "recharts";
 import { AuditBadge } from "./AuditBadge";
+import { METRICS, NET_ALPHA } from "@/data/metrics";
 
 interface RebalanceRecord {
   id: number;
@@ -163,13 +164,13 @@ export const ActiveStrategy: React.FC = () => {
             Information Ratio (IR)
           </span>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-bold text-slate-900">0.74</span>
+            <span className="text-lg font-bold text-slate-900">{METRICS.ir.active.toFixed(2)}</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              TOP QUARTILE
+              ABOVE 0.50 TARGET
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Target: &gt;0.50 Institutional Threshold
+            IR = {NET_ALPHA.toFixed(2)}% net alpha ÷ {METRICS.te.active.toFixed(2)}% tracking error
           </span>
         </div>
 
@@ -180,7 +181,7 @@ export const ActiveStrategy: React.FC = () => {
           <div className="mt-1 flex items-baseline justify-between">
             <span className="text-lg font-bold text-blue-900">104.2% / 88.6%</span>
             <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">
-              ASMETRIC
+              ASYMMETRIC
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
@@ -264,11 +265,11 @@ export const ActiveStrategy: React.FC = () => {
                 <AuditBadge type="CALCULATED_METRIC" />
               </div>
               <span className="text-xs text-slate-500">
-                Institutional 25 bps round-trip friction standard
+                Illustrative friction assumption: 25 bps per unit of traded value (one way)
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-amber-900 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
-              25 bps Realized TCA
+              25 bps assumed TCA
             </span>
           </div>
 
@@ -276,7 +277,7 @@ export const ActiveStrategy: React.FC = () => {
             <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
               <div>
                 <span className="font-sans font-bold text-slate-800 block">Securities Transaction Tax (STT)</span>
-                <span className="text-[11px] text-slate-500 font-sans">Statutory delivery duty on cash equities</span>
+                <span className="text-[11px] text-slate-500 font-sans">Statutory delivery duty: 0.1% on each buy and sell leg (verify current rate)</span>
               </div>
               <span className="font-bold text-slate-900">10.0 bps</span>
             </div>
@@ -306,7 +307,7 @@ export const ActiveStrategy: React.FC = () => {
             </div>
 
             <div className="p-3 bg-blue-50/80 rounded border border-blue-200 flex items-center justify-between text-blue-900 font-bold">
-              <span className="font-sans uppercase">Total Round-Trip Friction</span>
+              <span className="font-sans uppercase">Total friction per leg (one way)</span>
               <span className="text-sm">25.0 bps (0.25%)</span>
             </div>
           </div>
@@ -389,6 +390,14 @@ export const ActiveStrategy: React.FC = () => {
                   </td>
                 </tr>
               ))}
+              {!loading && rebalanceEvents.length === 0 && (
+                <tr>
+                  <td colSpan={9} className="py-6 px-3 text-center font-sans text-slate-500">
+                    No rebalancing events recorded. This log is served from PostgreSQL: if you expect events here,
+                    check that DATABASE_URL is set and the tables exist (run drizzle-kit push).
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

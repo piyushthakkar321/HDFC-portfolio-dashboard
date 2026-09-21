@@ -4,6 +4,8 @@ import React from "react";
 import { ShieldCheck, Download } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
 import { ThemeToggle } from "./ThemeToggle";
+import { BANKING_PEERS, HDFC_FUNDAMENTALS } from "@/data/hdfcData";
+import { MARKET_SNAPSHOT, MARKET_CAP_CR, MARKET_CAP_USD_BN } from "@/data/marketSnapshot";
 
 export type DashboardTab =
   | "executive"
@@ -25,11 +27,31 @@ interface HeaderProps {
   onOpenAuditModal: () => void;
 }
 
+const FY = HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1];
+const PEER = BANKING_PEERS[0];
+
 const STATS: { label: string; value: React.ReactNode; sub: string; subClass?: string }[] = [
-  { label: "52-week range", value: "₹681.90 — ₹1,020.50", sub: "Bonus adjusted" },
-  { label: "Market cap", value: "₹11,26,450 Cr", sub: "~$135.2 Bn USD" },
-  { label: "Valuation", value: "P/E 15.97x · P/B 2.12x", sub: "5Y avg P/B 3.10x" },
-  { label: "Key ratios", value: "NIM 3.52% · ROE 15.10%", sub: "GNPA 1.25%", subClass: "text-emerald-600" },
+  {
+    label: "52-week range",
+    value: `₹${MARKET_SNAPSHOT.low52.toFixed(2)} — ₹${MARKET_SNAPSHOT.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    sub: "Bonus adjusted · reference snapshot",
+  },
+  {
+    label: "Market cap",
+    value: `₹${MARKET_CAP_CR.toLocaleString("en-IN")} Cr`,
+    sub: `₹${MARKET_SNAPSHOT.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares · ~$${MARKET_CAP_USD_BN.toFixed(1)} Bn`,
+  },
+  {
+    label: "Valuation",
+    value: `P/E ${PEER.peRatio.toFixed(2)}x · P/B ${PEER.pbRatio.toFixed(2)}x`,
+    sub: "On FY25E EPS and BVPS · 5Y avg P/B 3.10x",
+  },
+  {
+    label: "Key ratios (FY25E)",
+    value: `NIM ${FY.nim.toFixed(2)}% · ROE ${FY.roe.toFixed(2)}%`,
+    sub: `GNPA ${FY.gnpa.toFixed(2)}%`,
+    subClass: "text-emerald-600",
+  },
   {
     label: "Mandate weights",
     value: (
@@ -61,7 +83,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="font-medium text-slate-200">BFSI Alpha & Mandate Analytics</span>
           <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Audited data feeds active
+            Static reference price · simulated series · see Data integrity
           </span>
         </div>
 
@@ -135,13 +157,13 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-xs">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-slate-500">Last traded price</span>
+            <span className="block text-[10px] uppercase tracking-wider text-slate-500">{MARKET_SNAPSHOT.status === "LIVE" ? "Last traded price" : "Reference price (static)"}</span>
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
-                ₹731.00
+                ₹{MARKET_SNAPSHOT.price.toFixed(2)}
               </span>
               <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-emerald-700">
-                +18.00 (+2.52%)
+                +{MARKET_SNAPSHOT.change.toFixed(2)} (+{MARKET_SNAPSHOT.changePct.toFixed(2)}%)
               </span>
             </div>
           </div>

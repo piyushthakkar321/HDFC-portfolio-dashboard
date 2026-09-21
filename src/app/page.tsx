@@ -13,6 +13,8 @@ import { ScenarioAnalysis } from "@/components/ScenarioAnalysis";
 import { MethodologyAudit } from "@/components/MethodologyAudit";
 import { ArchitecturalExtraction } from "@/components/ArchitecturalExtraction";
 import { AuditRulesModal } from "@/components/AuditRulesModal";
+import { DataIntegrityBar } from "@/components/DataIntegrityBar";
+import { COMPLIANCE } from "@/data/compliance";
 import { exportTearSheetCsv } from "@/utils/exportUtils";
 import { ShieldCheck } from "lucide-react";
 
@@ -36,6 +38,10 @@ export default function DashboardPage() {
           onOpenAuditModal={() => setIsAuditModalOpen(true)}
         />
 
+        <div className="mx-auto w-full max-w-[1400px] px-4 pt-4 md:px-6 lg:px-8 lg:pt-6">
+          <DataIntegrityBar benchmark={benchmark} />
+        </div>
+
         {/* key remounts the panel on tab change so the fade-in plays once per switch */}
         <main key={activeTab} className="animate-tab mx-auto w-full max-w-[1400px] flex-1 space-y-6 p-4 md:p-6 lg:p-8">
           {activeTab === "executive" && (
@@ -56,14 +62,15 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
               <span className="font-semibold text-slate-800">Apex Asset Management Workstation</span>
               <span>HDFC Bank mandate analytics</span>
-              <span className="font-semibold text-emerald-700">GIPS audit level 1</span>
+              <span className="font-semibold text-amber-700">{COMPLIANCE.gipsStatement}</span>
+              <span>SEBI Reg: {COMPLIANCE.sebiRegistration}</span>
             </div>
             <button
               onClick={() => setIsAuditModalOpen(true)}
               className="flex items-center gap-1 font-semibold text-blue-700 hover:underline"
             >
               <ShieldCheck className="h-3.5 w-3.5" />
-              <span>4-tier classification standard</span>
+              <span>Data classification legend</span>
             </button>
           </div>
 

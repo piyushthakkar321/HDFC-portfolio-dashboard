@@ -28,7 +28,9 @@ import {
   Info,
 } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
-import { generateTimeSeries, MONTHLY_RETURNS } from "@/data/hdfcData";
+import { generateTimeSeries, MONTHLY_RETURNS, dataThrough } from "@/data/hdfcData";
+import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
+import { sgn } from "@/data/metrics";
 
 export const TechnicalAnalysis: React.FC = () => {
   const [data] = useState(() => generateTimeSeries().technical);
@@ -60,11 +62,19 @@ export const TechnicalAnalysis: React.FC = () => {
     macdHist: 1.3,
   };
 
+  const throughDate = dataThrough();
+  const dmaGapPct = ((latestPoint.close - latestPoint.dma200) / latestPoint.dma200) * 100;
+  const aboveDma = dmaGapPct >= 0;
+  const rsiZone =
+    latestPoint.rsi > 70 ? "OVERBOUGHT" : latestPoint.rsi < 30 ? "OVERSOLD" : latestPoint.rsi >= 50 ? "NEUTRAL · BULLISH BIAS" : "NEUTRAL · BEARISH BIAS";
+  const macdAbove = latestPoint.macd >= latestPoint.macdSignal;
+
   // Technical Pivots (Standard Floor Pivot Equations)
   // Pivot = (H + L + C) / 3
-  const lastHigh = 733.8;
-  const lastLow = 715.25;
-  const lastClose = 731.0;
+  const lastPoint = data[data.length - 1];
+  const lastHigh = lastPoint?.high ?? MARKET_SNAPSHOT.price;
+  const lastLow = lastPoint?.low ?? MARKET_SNAPSHOT.price;
+  const lastClose = lastPoint?.close ?? MARKET_SNAPSHOT.price;
   const pivot = (lastHigh + lastLow + lastClose) / 3;
   const r1 = 2 * pivot - lastLow;
   const s1 = 2 * pivot - lastHigh;
@@ -80,10 +90,10 @@ export const TechnicalAnalysis: React.FC = () => {
             <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
               HDFC Bank Technical Workstation & Quantitative Momentum
             </h2>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            NSE Daily trading price history, 20/50/200 Day Moving Averages, Wilder's 14-period RSI, MACD (12, 26, 9), and calendar monthly return heat map.
+            Simulated daily price series (illustrative), data through {throughDate}, anchored to the reference price ₹{MARKET_SNAPSHOT.price.toFixed(2)}. 20/50/200 DMA, 14-period RSI and MACD (12, 26, 9) are computed from it; the monthly return matrix is a separate stored dataset.
           </p>
         </div>
 
@@ -151,12 +161,12 @@ export const TechnicalAnalysis: React.FC = () => {
           </span>
           <div className="mt-1 flex items-baseline justify-between">
             <span className="text-lg font-bold text-slate-900">₹{latestPoint.dma200.toFixed(2)}</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              +{(((latestPoint.close - latestPoint.dma200) / latestPoint.dma200) * 100).toFixed(1)}% Above
+            <span className={`font-bold px-1.5 py-0.5 rounded border ${aboveDma ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-rose-700 bg-rose-50 border-rose-200"}`}>
+              {Math.abs(dmaGapPct).toFixed(1)}% {aboveDma ? "above" : "below"}
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Status: Structural Support Intact
+            {aboveDma ? "Price is above the 200 DMA" : "Price is below the 200 DMA: long-term support tested"}
           </span>
         </div>
 
@@ -167,7 +177,7 @@ export const TechnicalAnalysis: React.FC = () => {
           <div className="mt-1 flex items-baseline justify-between">
             <span className="text-lg font-bold text-slate-900">{latestPoint.rsi.toFixed(1)}</span>
             <span className="text-blue-700 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
-              NEUTRAL BULLISH
+              {rsiZone}
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
@@ -180,13 +190,13 @@ export const TechnicalAnalysis: React.FC = () => {
             MACD (12, 26, 9)
           </span>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-bold text-slate-900">+{latestPoint.macd.toFixed(2)}</span>
-            <span className="text-emerald-700 font-bold bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              BULLISH CROSS
+            <span className="text-lg font-bold text-slate-900">{sgn(latestPoint.macd)}</span>
+            <span className={`font-bold px-1.5 py-0.5 rounded border ${macdAbove ? "text-emerald-700 bg-emerald-50 border-emerald-200" : "text-rose-700 bg-rose-50 border-rose-200"}`}>
+              {macdAbove ? "ABOVE SIGNAL" : "BELOW SIGNAL"}
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Signal: {latestPoint.macdSignal.toFixed(2)} | Hist: +{latestPoint.macdHist.toFixed(2)}
+            Signal: {latestPoint.macdSignal.toFixed(2)} | Hist: {sgn(latestPoint.macdHist)}
           </span>
         </div>
 
@@ -214,10 +224,10 @@ export const TechnicalAnalysis: React.FC = () => {
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 Price Series & Moving Average Envelopes (Bonus Adjusted)
               </h3>
-              <AuditBadge type="CALCULATED_METRIC" />
+              <AuditBadge type="SIMULATED" />
             </div>
             <span className="text-xs text-slate-500">
-              Current Close: ₹{latestPoint.close.toFixed(2)} | 200 DMA: ₹{latestPoint.dma200.toFixed(2)}
+              Latest close ({throughDate}): ₹{latestPoint.close.toFixed(2)} | 200 DMA: ₹{latestPoint.dma200.toFixed(2)}
             </span>
           </div>
 
@@ -310,7 +320,7 @@ export const TechnicalAnalysis: React.FC = () => {
         {showVolume && (
           <div className="mt-4 pt-3 border-t border-slate-100">
             <span className="text-[11px] font-mono text-slate-500 uppercase block mb-1">
-              Trading Volume (Millions of Shares Traded on NSE)
+              Trading volume (simulated, millions of shares)
             </span>
             <div className="h-20 w-full">
               <ResponsiveContainer width="100%" height="100%">
@@ -335,12 +345,12 @@ export const TechnicalAnalysis: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                   RSI 14-Period Oscillator
                 </h4>
-                <AuditBadge type="CALCULATED_METRIC" />
+                <AuditBadge type="SIMULATED" />
               </div>
               <span className="text-[11px] text-slate-500">Overbought: 70 | Oversold: 30</span>
             </div>
             <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-              Current: {latestPoint.rsi.toFixed(1)}
+              Latest ({throughDate}): {latestPoint.rsi.toFixed(1)}
             </span>
           </div>
 
@@ -377,12 +387,12 @@ export const TechnicalAnalysis: React.FC = () => {
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
                   MACD (12, 26, 9) Momentum & Histogram
                 </h4>
-                <AuditBadge type="CALCULATED_METRIC" />
+                <AuditBadge type="SIMULATED" />
               </div>
               <span className="text-[11px] text-slate-500">Fast EMA (12) - Slow EMA (26) vs Signal Line (9)</span>
             </div>
             <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-              MACD: +{latestPoint.macd.toFixed(2)}
+              MACD: {sgn(latestPoint.macd)}
             </span>
           </div>
 
@@ -421,7 +431,7 @@ export const TechnicalAnalysis: React.FC = () => {
               <AuditBadge type="HISTORICAL_OBSERVATION" />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Historical monthly percentage returns from January 2020 through March 2025.
+              Monthly percentage returns, January 2020 – March 2025. Return type: price return (assumed) · dividend-adjusted: no · bonus-adjusted: 1:1 Aug 2025 · source: stored dataset, not yet tied to an NSE extract (verify before external use).
             </p>
           </div>
           <span className="text-xs font-mono text-slate-500">

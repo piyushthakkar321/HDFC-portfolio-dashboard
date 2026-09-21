@@ -14,6 +14,7 @@ import {
   Award,
 } from "lucide-react";
 import { AuditBadge, ClassificationType } from "./AuditBadge";
+import { BadgeLegend } from "./BadgeLegend";
 
 interface CommitteeNoteItem {
   id: number;
@@ -124,10 +125,10 @@ export const MethodologyAudit: React.FC = () => {
       <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs">
         <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3 flex items-center gap-2">
           <ShieldCheck className="w-4 h-4 text-blue-700" />
-          <span>Institutional 4-Tier Classification Governance Standard</span>
+          <span>Data Classification Governance Standard</span>
         </h3>
         <p className="text-xs text-slate-500 mb-4">
-          To comply with institutional fiduciary governance, every data point, chart, and metric across this workstation is rigorously tagged into one of four distinct categories:
+          To comply with institutional fiduciary governance, every data point, chart, and metric across this workstation carries a classification tag. The four core categories are below; the SIM and EST tags are in the legend that follows:
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
@@ -137,7 +138,7 @@ export const MethodologyAudit: React.FC = () => {
               <AuditBadge type="HISTORICAL_OBSERVATION" />
             </div>
             <p className="text-slate-600 text-[11px] leading-relaxed">
-              Factual, unmodified historical data verified from statutory filings (HDFC Bank Audited Annual Reports FY20-24, Q3 FY25 disclosures, RBI DBIE, NSE official ticks). No synthetic data.
+              Reported figures entered from company filings (annual reports FY20-24, Q3 FY25 disclosures). Price and return time series in this build are simulated and are tagged SIM, not HIST.
             </p>
           </div>
 
@@ -173,6 +174,11 @@ export const MethodologyAudit: React.FC = () => {
         </div>
       </div>
 
+      <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs">
+        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide mb-3">Badge legend</h3>
+        <BadgeLegend />
+      </div>
+
       {/* Statutory Data Sources & Corporate Action Ledger */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="bg-white p-5 rounded-lg border border-slate-200 shadow-xs space-y-3">
@@ -191,7 +197,7 @@ export const MethodologyAudit: React.FC = () => {
             </li>
             <li className="py-2 flex justify-between">
               <span className="font-sans font-semibold text-slate-800">Market Price Data:</span>
-              <span className="text-slate-600">National Stock Exchange of India (NSE: HDFCBANK)</span>
+              <span className="text-slate-600">Reference price only (static); daily series simulated, no exchange feed connected</span>
             </li>
             <li className="py-2 flex justify-between">
               <span className="font-sans font-semibold text-slate-800">Benchmark Index:</span>
@@ -199,7 +205,7 @@ export const MethodologyAudit: React.FC = () => {
             </li>
             <li className="py-2 flex justify-between">
               <span className="font-sans font-semibold text-slate-800">Risk-Free Rate (Rf):</span>
-              <span className="text-slate-600 font-bold text-blue-900">6.80% (10Y Indian Sovereign G-Sec)</span>
+              <span className="text-slate-600 font-bold text-blue-900">6.80% (assumed 10Y G-Sec yield)</span>
             </li>
             <li className="py-2 flex justify-between">
               <span className="font-sans font-semibold text-slate-800">Banking Macro Statistics:</span>

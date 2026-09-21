@@ -1,3 +1,6 @@
+import { MARKET_SNAPSHOT, MARKET_CAP_CR } from "./marketSnapshot";
+import { METRICS, NET_ALPHA, RISK_FREE, PERIOD_YEARS, inr, pct, pp, sgn, spct } from "./metrics";
+
 // Institutional Data Store for HDFC Bank — Active vs Passive Portfolio Management
 // All data derived from Audited Annual Reports (FY20-FY24), Q3 FY25 Disclosures, NSE Historical Trading Records, and RBI DBIE.
 
@@ -385,10 +388,10 @@ export const BANKING_PEERS: PeerComparison[] = [
     ticker: "HDFCBANK.NS",
     name: "HDFC Bank Ltd",
     category: "Private Sector",
-    cmp: 731.00,
-    marketCapCr: 1126450,
-    peRatio: 15.97,
-    pbRatio: 2.12,
+    cmp: MARKET_SNAPSHOT.price,
+    marketCapCr: MARKET_CAP_CR,
+    peRatio: Math.round((MARKET_SNAPSHOT.price / HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1].eps) * 100) / 100,
+    pbRatio: Math.round((MARKET_SNAPSHOT.price / HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1].bvps) * 100) / 100,
     dividendYield: 1.78,
     nim: 3.52,
     costToIncome: 39.00,
@@ -556,7 +559,7 @@ export const MONTHLY_RETURNS: MonthlyReturnCell[] = [
 ];
 
 // Helper to generate realistic daily time series
-export function generateTimeSeries(): {
+function buildTimeSeries(): {
   technical: TechnicalPoint[];
   performance: StrategyPerformancePoint[];
 } {
@@ -577,7 +580,7 @@ export function generateTimeSeries(): {
   let passivePeak = 100.0;
   let benchmarkPeak = 31200.0;
 
-  const totalTradingDays = 1040;
+  const totalTradingDays = 1200; // upper bound only; the series ends at endDate (20 Mar 2025)
   let currentDate = new Date(startDate);
 
   // Moving average queues
@@ -708,8 +711,8 @@ export function generateTimeSeries(): {
           date: dateStr,
           activePortfolio: Math.round(activePortfolioVal * 100) / 100,
           passivePortfolio: Math.round(passivePortfolioVal * 100) / 100,
-          benchmarkNiftyBank: Math.round(niftyBankPrice * 100) / 100,
-          benchmarkNifty50: Math.round(nifty50Price * 100) / 100,
+          benchmarkNiftyBank: Math.round((niftyBankPrice / 31200) * 10000) / 100, // rebased to 100
+          benchmarkNifty50: Math.round((nifty50Price / 14000) * 10000) / 100, // rebased to 100
           activeDrawdown,
           passiveDrawdown,
           benchmarkDrawdown,
@@ -725,7 +728,104 @@ export function generateTimeSeries(): {
   return { technical, performance };
 }
 
+type TimeSeries = { technical: TechnicalPoint[]; performance: StrategyPerformancePoint[] };
+let cachedSeries: TimeSeries | null = null;
+
+// The simulated growth paths are re-based so their end points equal the model terminal values
+// (path shape is kept; each series is raised to a constant power). Drawdowns are recomputed from the result.
+function calibratePerformance(perf: StrategyPerformancePoint[]): StrategyPerformancePoint[] {
+  if (perf.length === 0) return perf;
+  const end = perf[perf.length - 1];
+  const target = {
+    active: (METRICS.terminal.active / 1e5),
+    passive: (METRICS.terminal.passive / 1e5),
+    bench: (METRICS.terminal.benchmark / 1e5),
+  };
+  const power = (endVal: number, tgt: number) =>
+    endVal > 100 && tgt > 100 ? Math.log(tgt / 100) / Math.log(endVal / 100) : 1;
+  const kA = power(end.activePortfolio, target.active);
+  const kP = power(end.passivePortfolio, target.passive);
+  const kB = power(end.benchmarkNiftyBank, target.bench);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  let peakA = 0, peakP = 0, peakB = 0;
+  const calibrated = perf.map((p) => {
+    const a = r2(100 * Math.pow(p.activePortfolio / 100, kA));
+    const pa = r2(100 * Math.pow(p.passivePortfolio / 100, kP));
+    const b = r2(100 * Math.pow(p.benchmarkNiftyBank / 100, kB));
+    peakA = Math.max(peakA, a); peakP = Math.max(peakP, pa); peakB = Math.max(peakB, b);
+    return {
+      ...p,
+      activePortfolio: a,
+      passivePortfolio: pa,
+      benchmarkNiftyBank: b,
+      activeDrawdown: r2(((a - peakA) / peakA) * 100),
+      passiveDrawdown: r2(((pa - peakP) / peakP) * 100),
+      benchmarkDrawdown: r2(((b - peakB) / peakB) * 100),
+      trackingDifference: r2(pa - b),
+    };
+  });
+  // Scale each drawdown path so its trough equals the model maximum drawdown (shape preserved).
+  const scale = (key: "activeDrawdown" | "passiveDrawdown" | "benchmarkDrawdown", model: number) => {
+    const trough = Math.min(...calibrated.map((p) => p[key]));
+    return trough < 0 ? model / trough : 1;
+  };
+  const sA = scale("activeDrawdown", METRICS.mdd.active);
+  const sP = scale("passiveDrawdown", METRICS.mdd.passive);
+  const sB = scale("benchmarkDrawdown", METRICS.mdd.benchmark);
+  return calibrated.map((p) => ({
+    ...p,
+    activeDrawdown: r2(p.activeDrawdown * sA),
+    passiveDrawdown: r2(p.passiveDrawdown * sP),
+    benchmarkDrawdown: r2(p.benchmarkDrawdown * sB),
+  }));
+}
+
+// The simulated price path is rescaled so its last close equals the single global reference price.
+function anchorToSnapshot(series: TimeSeries): TimeSeries {
+  const last = series.technical[series.technical.length - 1];
+  if (!last || last.close <= 0) return series;
+  const k = MARKET_SNAPSHOT.price / last.close;
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return {
+    performance: calibratePerformance(series.performance),
+    technical: series.technical.map((p) => ({
+      ...p,
+      close: r2(p.close * k),
+      open: r2(p.open * k),
+      high: r2(p.high * k),
+      low: r2(p.low * k),
+      dma20: r2(p.dma20 * k),
+      dma50: r2(p.dma50 * k),
+      dma200: r2(p.dma200 * k),
+      macd: r2(p.macd * k),
+      macdSignal: r2(p.macdSignal * k),
+      macdHist: r2(p.macdHist * k),
+    })),
+  };
+}
+
+// Deterministic, simulated series (illustrative). Cached so every module sees identical data.
+export function generateTimeSeries(): TimeSeries {
+  if (!cachedSeries) cachedSeries = anchorToSnapshot(buildTimeSeries());
+  return cachedSeries;
+}
+
+// Last observation date of the simulated series, e.g. "20 Mar 2025".
+export function dataThrough(): string {
+  const t = generateTimeSeries().technical;
+  const d = t[t.length - 1]?.date;
+  if (!d) return "n/a";
+  return new Date(`${d}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 // 5. SUMMARY STATISTICAL METRICS (ACTIVE VS PASSIVE INSTITUTIONAL TEARSHEET)
+// Every figure below is derived in metrics.ts from a small set of illustrative model inputs,
+// so the rows reconcile with each other (CAGR <-> terminal value, IR <-> alpha/TE, Sharpe <-> CAGR/vol).
 export interface TearSheetMetric {
   metric: string;
   category: "Return" | "Risk" | "Risk-Adjusted" | "Execution & Cost" | "Tail Risk";
@@ -733,60 +833,66 @@ export interface TearSheetMetric {
   passiveStrategy: string | number;
   benchmarkNiftyBank: string | number;
   deltaVsPassive: string | number;
-  badge: "CALCULATED_METRIC" | "HISTORICAL_OBSERVATION" | "SCENARIO_ASSUMPTION" | "INTERPRETATION";
+  badge: "CALCULATED_METRIC" | "HISTORICAL_OBSERVATION" | "SCENARIO_ASSUMPTION" | "INTERPRETATION" | "SIMULATED" | "ESTIMATE";
   formulaExplanation: string;
 }
+
+const M = METRICS;
+const wealthDelta = M.terminal.active - M.terminal.passive;
 
 export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
   {
     metric: "Final Portfolio Value (from ₹10,000,000)",
     category: "Return",
-    activeStrategy: "₹20,534,800",
-    passiveStrategy: "₹18,124,300",
-    benchmarkNiftyBank: "₹18,340,000",
-    deltaVsPassive: "+₹2,410,500 (+13.3%)",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Terminal portfolio accumulation net of all fees, STT, brokerage, and rebalancing slippage over 4.25-year investment period.",
+    activeStrategy: inr(M.terminal.active),
+    passiveStrategy: inr(M.terminal.passive),
+    benchmarkNiftyBank: inr(M.terminal.benchmark),
+    deltaVsPassive: `${wealthDelta >= 0 ? "+" : "−"}${inr(Math.abs(wealthDelta))} (${spct((M.terminal.active / M.terminal.passive - 1) * 100, 1)})`,
+    badge: "SIMULATED",
+    formulaExplanation:
+      "Terminal value of ₹10,000,000 over Jan 2021 – Mar 2025, net of costs. Passive and benchmark terminal values are illustrative model inputs; Active = initial × (1 + Nifty Bank CAGR + net alpha)^4.25. Not an audited NAV.",
   },
   {
     metric: "Compound Annual Growth Rate (CAGR)",
     category: "Return",
-    activeStrategy: "18.15%",
-    passiveStrategy: "14.98%",
-    benchmarkNiftyBank: "15.32%",
-    deltaVsPassive: "+3.17%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "(Ending Value / Beginning Value)^(1 / n) - 1, annualized.",
+    activeStrategy: pct(M.cagr.active),
+    passiveStrategy: pct(M.cagr.passive),
+    benchmarkNiftyBank: pct(M.cagr.benchmark),
+    deltaVsPassive: pp(M.cagr.active - M.cagr.passive),
+    badge: "SIMULATED",
+    formulaExplanation:
+      "Geometric CAGR = (Terminal ÷ Initial)^(1 ÷ 4.25) − 1, start Jan 2021, end Mar 2025, no interim cash flows. This is not an XIRR or time-weighted return.",
   },
   {
     metric: "Annualized Volatility (Standard Deviation)",
     category: "Risk",
-    activeStrategy: "17.20%",
-    passiveStrategy: "19.10%",
-    benchmarkNiftyBank: "19.35%",
-    deltaVsPassive: "-1.90% (Lower Risk)",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Daily return sample standard deviation multiplied by sqrt(252 trading days). Active strategy reduces volatility via quality factor tilt and cash rebalancing buffer.",
+    activeStrategy: pct(M.vol.active),
+    passiveStrategy: pct(M.vol.passive),
+    benchmarkNiftyBank: pct(M.vol.benchmark),
+    deltaVsPassive: `${pp(M.vol.active - M.vol.passive)} (lower absolute volatility)`,
+    badge: "SIMULATED",
+    formulaExplanation:
+      "Daily return sample standard deviation × √252. The delta is an absolute difference in percentage points (pp), not a relative change.",
   },
   {
     metric: "Sharpe Ratio (Rf = 6.80% 10Y G-Sec)",
     category: "Risk-Adjusted",
-    activeStrategy: "0.66",
-    passiveStrategy: "0.43",
-    benchmarkNiftyBank: "0.44",
-    deltaVsPassive: "+0.23",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "(Portfolio CAGR - Risk Free Rate) / Annualized Volatility. Rf benchmarked to 10-Year Indian Sovereign Benchmark Yield.",
+    activeStrategy: M.sharpe.active.toFixed(2),
+    passiveStrategy: M.sharpe.passive.toFixed(2),
+    benchmarkNiftyBank: M.sharpe.benchmark.toFixed(2),
+    deltaVsPassive: sgn(M.sharpe.active - M.sharpe.passive),
+    badge: "SIMULATED",
+    formulaExplanation: `(CAGR − Rf) ÷ volatility. Active: (${M.cagr.active.toFixed(2)}% − ${RISK_FREE.toFixed(2)}%) ÷ ${M.vol.active.toFixed(2)}% = ${M.sharpe.active.toFixed(2)}. Rf is an assumed 10Y G-Sec yield.`,
   },
   {
     metric: "Treynor Ratio",
     category: "Risk-Adjusted",
-    activeStrategy: "12.07%",
-    passiveStrategy: "8.18%",
-    benchmarkNiftyBank: "8.52%",
-    deltaVsPassive: "+3.89%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "(Portfolio Return - Rf) / Beta. Measures systemic excess return generated per unit of market risk.",
+    activeStrategy: pct(M.treynor.active),
+    passiveStrategy: pct(M.treynor.passive),
+    benchmarkNiftyBank: pct(M.treynor.benchmark),
+    deltaVsPassive: pp(M.treynor.active - M.treynor.passive),
+    badge: "SIMULATED",
+    formulaExplanation: `(CAGR − Rf) ÷ beta. Betas vs Nifty Bank: Active ${M.beta.active.toFixed(2)}, Passive ${M.beta.passive.toFixed(2)}.`,
   },
   {
     metric: "Jensen's Alpha (vs Nifty Bank)",
@@ -794,39 +900,41 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: "+2.24% p.a.",
     passiveStrategy: "-0.22% p.a.",
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+2.46%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Portfolio Return - [Rf + Beta * (Benchmark Return - Rf)]. Net idiosyncratic risk-adjusted return.",
+    deltaVsPassive: "+2.46 pp",
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation:
+      "Regression intercept from a CAPM fit of monthly returns against Nifty Bank. It is a different quantity from Net Realized Alpha (CAGR excess over Nifty Bank, +2.18 pp), so the two figures are not expected to match. Stored model input, not recomputed from the simulated series.",
   },
   {
     metric: "Information Ratio (IR)",
     category: "Risk-Adjusted",
-    activeStrategy: "0.74",
-    passiveStrategy: "-0.58",
+    activeStrategy: M.ir.active.toFixed(2),
+    passiveStrategy: M.ir.passive.toFixed(2),
     benchmarkNiftyBank: "N/A",
-    deltaVsPassive: "+1.32",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Mean Active Return / Annualized Tracking Error. Institutional benchmark: >0.50 is good, >0.70 is exceptional.",
+    deltaVsPassive: sgn(M.ir.active - M.ir.passive),
+    badge: "SIMULATED",
+    formulaExplanation: `IR = net alpha ÷ tracking error. Active: ${NET_ALPHA.toFixed(2)}% ÷ ${M.te.active.toFixed(2)}% = ${M.ir.active.toFixed(2)}. Passive: (${M.cagr.passive.toFixed(2)}% − ${M.cagr.benchmark.toFixed(2)}%) ÷ ${M.te.passive.toFixed(2)}% = ${M.ir.passive.toFixed(2)}. Both use the ${PERIOD_YEARS}-year window, annualised.`,
   },
   {
     metric: "Sortino Ratio (MAR = 6.80%)",
     category: "Risk-Adjusted",
-    activeStrategy: "0.98",
-    passiveStrategy: "0.62",
-    benchmarkNiftyBank: "0.64",
-    deltaVsPassive: "+0.36",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Excess return divided by Downside Semi-Deviation. Penalizes negative volatility only.",
+    activeStrategy: M.sortino.active.toFixed(2),
+    passiveStrategy: M.sortino.passive.toFixed(2),
+    benchmarkNiftyBank: M.sortino.benchmark.toFixed(2),
+    deltaVsPassive: sgn(M.sortino.active - M.sortino.passive),
+    badge: "SIMULATED",
+    formulaExplanation: "(CAGR − MAR) ÷ downside semi-deviation. Penalizes negative volatility only.",
   },
   {
     metric: "Maximum Drawdown (Peak-to-Trough)",
     category: "Tail Risk",
-    activeStrategy: "-23.40%",
-    passiveStrategy: "-28.90%",
-    benchmarkNiftyBank: "-29.40%",
-    deltaVsPassive: "+5.50% (Milder drawdown)",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Largest percentage drop from cumulative portfolio high to subsequent trough.",
+    activeStrategy: pct(M.mdd.active),
+    passiveStrategy: pct(M.mdd.passive),
+    benchmarkNiftyBank: pct(M.mdd.benchmark),
+    deltaVsPassive: `${pp(M.mdd.active - M.mdd.passive)} (lower maximum drawdown)`,
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation:
+      "Largest percentage drop from a cumulative high to a subsequent trough. Stored model input; the simulated drawdown chart is illustrative and will not match exactly.",
   },
   {
     metric: "Value-at-Risk (VaR 95% 1-Day)",
@@ -834,29 +942,30 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: "-1.72%",
     passiveStrategy: "-1.98%",
     benchmarkNiftyBank: "-2.02%",
-    deltaVsPassive: "+0.26% (Lower tail risk)",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Historical 5th percentile daily loss threshold.",
+    deltaVsPassive: "+0.26 pp (smaller 1-day loss threshold)",
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation: "Historical 5th percentile daily loss threshold. Stored model input.",
   },
   {
     metric: "Tracking Error (Annualized)",
     category: "Execution & Cost",
-    activeStrategy: "3.92%",
-    passiveStrategy: "0.28%",
+    activeStrategy: pct(M.te.active),
+    passiveStrategy: pct(M.te.passive),
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+3.64%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Standard deviation of (R_portfolio - R_benchmark). Active has targeted active risk budget; Passive minimizes tracking error.",
+    deltaVsPassive: "+3.64 pp",
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation:
+      "Standard deviation of (R_portfolio − R_benchmark), annualised. Active carries a targeted active-risk budget; Passive minimizes tracking error.",
   },
   {
-    metric: "Tracking Difference (Cumulative p.a.)",
+    metric: "Tracking Difference (vs Nifty Bank, p.a.)",
     category: "Execution & Cost",
-    activeStrategy: "+2.83%",
-    passiveStrategy: "-0.34%",
+    activeStrategy: `${spct(M.td.active)} p.a.`,
+    passiveStrategy: `${spct(M.td.passive)} p.a.`,
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+3.17%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Cumulative annualized spread between portfolio return and benchmark return.",
+    deltaVsPassive: pp(M.td.active - M.td.passive),
+    badge: "SIMULATED",
+    formulaExplanation: "Annualised CAGR of the portfolio minus annualised CAGR of Nifty Bank (the mandate benchmark).",
   },
   {
     metric: "Annualized Turnover Rate",
@@ -864,9 +973,9 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: "14.20%",
     passiveStrategy: "2.10%",
     benchmarkNiftyBank: "N/A",
-    deltaVsPassive: "+12.10%",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Sum of lesser of buys and sells divided by average mandate NAV.",
+    deltaVsPassive: "+12.10 pp",
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation: "Sum of the lesser of buys and sells divided by average mandate NAV. Stored model input.",
   },
   {
     metric: "Total Fee & Execution Friction Drag",
@@ -874,8 +983,9 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: "1.45% p.a.",
     passiveStrategy: "0.22% p.a.",
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+1.23% p.a. fee cost",
-    badge: "CALCULATED_METRIC",
-    formulaExplanation: "Includes Management Expense Ratio (TER 1.20% active vs 0.15% ETF) + 25 bps STT, brokerage, exchange fees, and market impact per rebalance.",
+    deltaVsPassive: "+1.23 pp p.a.",
+    badge: "SCENARIO_ASSUMPTION",
+    formulaExplanation:
+      "Management Expense Ratio (TER 1.20% Active vs 0.15% ETF) plus an assumed 25 bps friction per unit of traded value. Stored model input.",
   },
 ];

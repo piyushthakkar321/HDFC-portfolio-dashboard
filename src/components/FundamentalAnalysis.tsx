@@ -30,12 +30,16 @@ import {
   Info,
 } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
+import { dupontProduct } from "@/data/reconciliation";
+import { sgn } from "@/data/metrics";
 import {
   HDFC_FUNDAMENTALS,
   HDFC_DUPONT,
   BANKING_PEERS,
   BankFundamentalYear,
 } from "@/data/hdfcData";
+
+const DUPONT_MAX_VAR = Math.max(...HDFC_DUPONT.map((d) => Math.abs(dupontProduct(d) - d.reportedRoe)));
 
 export const FundamentalAnalysis: React.FC = () => {
   const [selectedPeerCategory, setSelectedPeerCategory] = useState<"ALL" | "Private Sector" | "Public Sector (PSU)">("ALL");
@@ -77,12 +81,12 @@ export const FundamentalAnalysis: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
-              HDFC Bank Audited Fundamental Analysis & Sector Comps
+              HDFC Bank Fundamental Analysis & Sector Comps
             </h2>
             <AuditBadge type="HISTORICAL_OBSERVATION" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
-            Comprehensive financial review from FY20 to FY25E. Balance sheet amalgamation effective July 1, 2023. Per-share metrics adjusted for 1:1 August 2025 bonus issue.
+            Comprehensive financial review from FY20 to FY25E. Balance sheet amalgamation effective July 1, 2023. Per-share metrics adjusted for 1:1 August 2025 bonus issue. FY20–FY24 are reported figures; FY25E is a model estimate (not audited).
           </p>
         </div>
 
@@ -134,7 +138,7 @@ export const FundamentalAnalysis: React.FC = () => {
                     </h3>
                     <AuditBadge type="HISTORICAL_OBSERVATION" />
                   </div>
-                  <span className="text-xs text-slate-500">Values in ₹ Crore</span>
+                  <span className="text-xs text-slate-500">Values in ₹ Crore · FY25E = estimate (not audited)</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                   FY24 Total: ₹1,57,773 Cr (+33.6%)
@@ -183,7 +187,7 @@ export const FundamentalAnalysis: React.FC = () => {
                     </h3>
                     <AuditBadge type="HISTORICAL_OBSERVATION" />
                   </div>
-                  <span className="text-xs text-slate-500">Values in ₹ Crore</span>
+                  <span className="text-xs text-slate-500">Values in ₹ Crore · FY25E = estimate (not audited)</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
                   FY24 PAT: ₹60,812 Cr (+37.9%)
@@ -236,7 +240,7 @@ export const FundamentalAnalysis: React.FC = () => {
                     </h3>
                     <AuditBadge type="CALCULATED_METRIC" />
                   </div>
-                  <span className="text-xs text-slate-500">Margin transition post-merger integration</span>
+                  <span className="text-xs text-slate-500">Margin transition post-merger integration · FY25E = estimate</span>
                 </div>
                 <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                   NIM Reset: 4.10% → 3.52%
@@ -282,7 +286,7 @@ export const FundamentalAnalysis: React.FC = () => {
                     <AuditBadge type="CALCULATED_METRIC" />
                   </div>
                   <span className="text-xs text-slate-500">
-                    Adjusted for 1:1 Bonus Issue in August 2025
+                    Adjusted for 1:1 Bonus Issue in August 2025 · FY25E = estimate
                   </span>
                 </div>
                 <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -324,17 +328,17 @@ export const FundamentalAnalysis: React.FC = () => {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
-                  Audited Standalone / Merged Multi-Year Financial Ledger
+                  Historical Financials (FY20–FY24) & FY25E Estimates
                 </h3>
                 <AuditBadge type="HISTORICAL_OBSERVATION" />
               </div>
               <span className="text-xs text-slate-500 font-mono">
-                Source: Annual Reports FY20-24 & Q3 FY25 Statutory Disclosures
+                Source: Annual Reports FY20-24 & Q3 FY25 disclosures · shaded FY25E column = model estimate, not audited
               </span>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="ledger-table w-full text-left border-collapse text-xs">
                 <thead>
                   <tr className="bg-slate-100 border-b border-slate-200 text-slate-700 font-mono uppercase text-[11px]">
                     <th className="py-2 px-3">Metric (₹ Cr / %)</th>
@@ -507,7 +511,7 @@ export const FundamentalAnalysis: React.FC = () => {
                 </p>
               </div>
               <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-                Mathematical Verification: 100% Match
+                Reconciliation: max variance {DUPONT_MAX_VAR.toFixed(2)} pp vs reported ROE
               </span>
             </div>
 
@@ -546,14 +550,12 @@ export const FundamentalAnalysis: React.FC = () => {
                       </td>
                       <td className="py-2.5 px-3 text-center text-slate-400">=</td>
                       <td className="py-2.5 px-3 text-right font-bold text-slate-900">
-                        {d.roeCalculated.toFixed(2)}%
+                        {dupontProduct(d).toFixed(2)}%
                       </td>
                       <td className="py-2.5 px-3 text-right text-slate-700">
                         {d.reportedRoe.toFixed(2)}%
                       </td>
-                      <td className="py-2.5 px-3 text-center text-emerald-700 font-bold">
-                        0.00%
-                      </td>
+                      <td className="py-2.5 px-3 text-center text-emerald-700 font-bold">{sgn(dupontProduct(d) - d.reportedRoe)} pp</td>
                     </tr>
                   ))}
                 </tbody>
@@ -701,7 +703,7 @@ export const FundamentalAnalysis: React.FC = () => {
                 <AuditBadge type="HISTORICAL_OBSERVATION" />
               </div>
               <span className="text-xs text-slate-500 font-mono">
-                Market Cap & Ratios as of Latest Audited / Q3 FY25
+                Peer set: HDFC, ICICI, Kotak, Axis, SBI, IndusInd · ratios as labelled in source data (FY25E / Q3 FY25) · standalone vs consolidated basis not specified
               </span>
             </div>
 

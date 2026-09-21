@@ -58,6 +58,26 @@ const TIERS: {
     box: "bg-purple-50 border-purple-200",
     titleClass: "text-purple-950",
   },
+  {
+    title: "5. Estimate",
+    type: "ESTIMATE",
+    code: "EST",
+    definition:
+      "Forward-looking or consensus figures such as FY25E. They are model estimates and have not been audited or reported by the company.",
+    examples: "Examples: FY25E NII, PAT, EPS, BVPS and the ratios built on them.",
+    box: "bg-orange-50 border-orange-200",
+    titleClass: "text-orange-900",
+  },
+  {
+    title: "6. Simulated / Illustrative",
+    type: "SIMULATED",
+    code: "SIM",
+    definition:
+      "Deterministic simulation output and illustrative model inputs: the daily price path, RSI, MACD, moving averages, portfolio paths and the ratios derived from the illustrative return inputs. Not an audited NAV or exchange record.",
+    examples: "Examples: Technical Analysis charts, growth-of-capital chart, CAGR, Sharpe, IR in the tear sheet.",
+    box: "bg-cyan-50 border-cyan-200",
+    titleClass: "text-cyan-900",
+  },
 ];
 
 export const AuditRulesModal: React.FC<AuditRulesModalProps> = ({ isOpen, onClose }) => {
@@ -88,7 +108,7 @@ export const AuditRulesModal: React.FC<AuditRulesModalProps> = ({ isOpen, onClos
           <div className="flex items-center gap-2">
             <ShieldCheck className="h-5 w-5 text-blue-700" />
             <h3 className="text-sm font-bold tracking-wide text-slate-900">
-              Institutional Governance & 4-Tier Data Classification
+              Data Classification Standard
             </h3>
           </div>
           <button

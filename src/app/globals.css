@@ -12,14 +12,14 @@
 /* Tokens                                                              */
 /* ------------------------------------------------------------------ */
 :root {
-  --bg: #faf9f6;
+  --bg: #f3f5fa;
   --surface: #ffffff;
-  --surface-2: #f7f5f0;
-  --border: #ece7dc;
-  --text: #1c1917;
-  --muted: #78716c;
-  --accent: #b45309;
-  --accent-strong: #92400e;
+  --surface-2: #f4f6fb;
+  --border: #e4e8f1;
+  --text: #0b1220;
+  --muted: #667085;
+  --accent: #2151d6;
+  --accent-strong: #1d43b8;
   --shadow:
     0 0 0 1px rgba(16, 24, 40, 0.02), 0 1px 2px rgba(16, 24, 40, 0.04), 0 8px 24px -12px rgba(16, 24, 40, 0.12);
   --shadow-hover:
@@ -93,28 +93,14 @@ body {
 /* Sidebar                                                             */
 /* ------------------------------------------------------------------ */
 .side {
-  width: 260px;
-  transition: width 0.2s ease;
   background: linear-gradient(180deg, var(--surface) 0%, color-mix(in srgb, var(--surface) 94%, var(--bg)) 100%);
   border-right: 1px solid var(--border);
 }
-.side-collapsed {
-  width: 72px;
-}
-.sidebar-toggle {
-  display: grid;
-  place-items: center;
-  width: 1.5rem;
-  height: 1.5rem;
-  flex-shrink: 0;
-  border-radius: 8px;
-  color: var(--muted);
-  background: color-mix(in srgb, var(--muted) 10%, transparent);
-  transition: background 0.15s ease, color 0.15s ease;
-}
-.sidebar-toggle:hover {
-  color: var(--text);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+@media (max-width: 1023px) {
+  .side {
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
 }
 
 .brand-mark {
@@ -134,7 +120,7 @@ body {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.6rem;
+  padding: 0.45rem 0.7rem 0.45rem 0.55rem;
   border-radius: 11px;
   font-size: 0.8125rem;
   font-weight: 550;
@@ -142,19 +128,14 @@ body {
   text-align: left;
   transition: background 0.18s ease, color 0.18s ease;
 }
-.nav-item-collapsed span:not(.nav-icon) {
-  display: none;
-}
-.nav-item-collapsed {
-  justify-content: center;
-}
 .nav-item:hover {
   color: var(--text);
-  background: color-mix(in srgb, var(--accent) 8%, transparent);
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
 }
 .nav-item[aria-current="page"] {
   color: var(--accent-strong);
-  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  font-weight: 600;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
 }
 .nav-item[aria-current="page"]::before {
   content: "";
@@ -175,12 +156,13 @@ body {
 .nav-icon {
   display: grid;
   place-items: center;
-  width: 2rem;
-  height: 2rem;
+  width: 1.75rem;
+  height: 1.75rem;
   flex-shrink: 0;
   border-radius: 9px;
-  color: inherit;
-  background: transparent;
+  color: var(--muted);
+  background: color-mix(in srgb, var(--muted) 12%, transparent);
+  transition: background 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
 }
 .nav-item[aria-current="page"] .nav-icon {
   color: #fff;
@@ -281,6 +263,14 @@ main tbody td {
 }
 main tbody tr:hover td {
   background: color-mix(in srgb, var(--accent) 6%, transparent);
+}
+
+/* Estimate (FY25E) column in the financial ledger */
+.ledger-table th:nth-last-child(2),
+.ledger-table td:nth-last-child(2) {
+  background: rgba(245, 158, 11, 0.1);
+  border-left: 1px dashed rgba(245, 158, 11, 0.6);
+  font-style: italic;
 }
 
 /* Sliders */
@@ -416,6 +406,12 @@ button {
 .dark .bg-amber-50, .dark .bg-amber-100, .dark [class*="bg-amber-50/"] { background-color: rgba(245, 158, 11, 0.14); }
 .dark .bg-purple-50, .dark [class*="bg-purple-50/"] { background-color: rgba(139, 92, 246, 0.16); }
 .dark .bg-blue-950 { background-color: rgba(59, 130, 246, 0.18); }
+.dark .bg-cyan-50 { background-color: rgba(6, 182, 212, 0.14); }
+.dark .text-cyan-800, .dark .text-cyan-900 { color: #67e8f9; }
+.dark .border-cyan-200 { border-color: rgba(6, 182, 212, 0.35); }
+.dark .bg-orange-50 { background-color: rgba(249, 115, 22, 0.14); }
+.dark .text-orange-800, .dark .text-orange-900 { color: #fdba74; }
+.dark .border-orange-200 { border-color: rgba(249, 115, 22, 0.35); }
 .dark .nav-badge { color: #fbbf24; background: rgba(245, 158, 11, 0.16); }
 
 .dark .border-slate-100,

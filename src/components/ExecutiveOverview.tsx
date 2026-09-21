@@ -29,6 +29,8 @@ import {
   Bar,
 } from "recharts";
 import { AuditBadge } from "./AuditBadge";
+import { MandateScorecard } from "./MandateScorecard";
+import { METRICS, ALPHA_BRIDGE, INITIAL_CAPITAL, NET_ALPHA, pct, sgn } from "@/data/metrics";
 import {
   HDFC_FUNDAMENTALS,
   generateTimeSeries,
@@ -48,6 +50,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
 }) => {
   const [timeSeries] = useState(() => generateTimeSeries());
   const benchmarkName = benchmark === "NIFTY_BANK" ? "Nifty Bank Index" : "Nifty 50 Index";
+  const comparatorKey = benchmark === "NIFTY_BANK" ? "benchmarkNiftyBank" : "benchmarkNifty50";
 
   // Format currency
   const formatCur = (val: number) => {
@@ -93,7 +96,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               <AuditBadge type="INTERPRETATION" customText="INTP" />
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Current Mandate Recommendation: <strong className="text-emerald-400">OVERWEIGHT</strong> (+450 bps vs Nifty Bank benchmark weight). Favorable risk-reward post-merger valuation compression.
+              Current Mandate Recommendation: <strong className="text-emerald-400">OVERWEIGHT</strong> (+450 bps vs Nifty Bank benchmark weight). Rationale: post-merger valuation compression. The factor scorecard below shows the rules behind this signal.
             </p>
           </div>
         </div>
@@ -110,6 +113,8 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         </div>
       </div>
 
+      <MandateScorecard />
+
       {/* Primary KPI Comparative Grid: Active vs Passive vs Benchmark */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Terminal Portfolio Value Card */}
@@ -118,11 +123,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Terminal Portfolio Value
             </span>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <div className="mt-2.5">
             <div className="text-2xl font-bold font-mono text-slate-900">
-              {formatCur(205.35)}
+              {formatCur((METRICS.terminal.active / INITIAL_CAPITAL) * 100)}
             </div>
             <span className="text-xs text-slate-500 font-mono">
               Active Strategy (Net of 25bps friction)
@@ -131,11 +136,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
             <div>
               <span className="text-slate-400 block text-[10px]">PASSIVE VALUE</span>
-              <span className="font-semibold text-slate-700">{formatCur(181.24)}</span>
+              <span className="font-semibold text-slate-700">{formatCur((METRICS.terminal.passive / INITIAL_CAPITAL) * 100)}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-400 block text-[10px]">ALPHA WEALTH</span>
-              <span className="font-bold text-emerald-700">+{capitalBase === 1 ? "₹24.11" : "₹24.1 Lakhs"}</span>
+              <span className="font-bold text-emerald-700">+{formatCur(((METRICS.terminal.active - METRICS.terminal.passive) / INITIAL_CAPITAL) * 100)}</span>
             </div>
           </div>
         </div>
@@ -146,25 +151,25 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               CAGR (4.25-Year Net)
             </span>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <div className="text-2xl font-bold font-mono text-slate-900">18.15%</div>
+            <div className="text-2xl font-bold font-mono text-slate-900">{pct(METRICS.cagr.active)}</div>
             <span className="inline-flex items-center text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              <ArrowUpRight className="w-3 h-3 mr-0.5" /> +3.17% Alpha
+              <ArrowUpRight className="w-3 h-3 mr-0.5" /> {sgn(NET_ALPHA)} pp vs Nifty Bank
             </span>
           </div>
           <span className="text-xs text-slate-500 font-mono block mt-0.5">
-            Active Strategy vs 14.98% Passive
+            Geometric CAGR · Passive {pct(METRICS.cagr.passive)}
           </span>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
             <div>
               <span className="text-slate-400 block text-[10px]">BENCHMARK CAGR</span>
-              <span className="font-semibold text-slate-700">15.32%</span>
+              <span className="font-semibold text-slate-700">{pct(METRICS.cagr.benchmark)}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-400 block text-[10px]">TOTAL RETURN</span>
-              <span className="font-bold text-slate-800">+105.35%</span>
+              <span className="font-bold text-slate-800">{sgn(METRICS.totalReturnPct("active"), 2)}%</span>
             </div>
           </div>
         </div>
@@ -175,12 +180,12 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Sharpe Ratio (Rf = 6.80%)
             </span>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <div className="text-2xl font-bold font-mono text-slate-900">0.66</div>
+            <div className="text-2xl font-bold font-mono text-slate-900">{METRICS.sharpe.active.toFixed(2)}</div>
             <span className="inline-flex items-center text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              +0.23 Superior
+              {sgn(METRICS.sharpe.active - METRICS.sharpe.passive)} vs Passive
             </span>
           </div>
           <span className="text-xs text-slate-500 font-mono block mt-0.5">
@@ -189,11 +194,11 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
             <div>
               <span className="text-slate-400 block text-[10px]">PASSIVE SHARPE</span>
-              <span className="font-semibold text-slate-700">0.43</span>
+              <span className="font-semibold text-slate-700">{METRICS.sharpe.passive.toFixed(2)}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-400 block text-[10px]">ANNUAL VOLATILITY</span>
-              <span className="font-bold text-slate-800">17.20%</span>
+              <span className="font-bold text-slate-800">{pct(METRICS.vol.active)}</span>
             </div>
           </div>
         </div>
@@ -204,25 +209,25 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Maximum Drawdown
             </span>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <div className="mt-2.5 flex items-baseline justify-between">
-            <div className="text-2xl font-bold font-mono text-slate-900">-23.40%</div>
+            <div className="text-2xl font-bold font-mono text-slate-900">{pct(METRICS.mdd.active)}</div>
             <span className="inline-flex items-center text-xs font-bold font-mono text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200">
-              550 bps Milder
+              {Math.round(Math.abs(METRICS.mdd.active - METRICS.mdd.passive) * 100)} bps lower vs Passive
             </span>
           </div>
           <span className="text-xs text-slate-500 font-mono block mt-0.5">
-            Active Peak-to-Trough vs -28.90% Passive
+            Active peak-to-trough vs {pct(METRICS.mdd.passive)} Passive
           </span>
           <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-xs font-mono">
             <div>
               <span className="text-slate-400 block text-[10px]">BENCHMARK MDD</span>
-              <span className="font-semibold text-slate-700">-29.40%</span>
+              <span className="font-semibold text-slate-700">{pct(METRICS.mdd.benchmark)}</span>
             </div>
             <div className="text-right">
               <span className="text-slate-400 block text-[10px]">CALMAR RATIO</span>
-              <span className="font-bold text-slate-800">0.78</span>
+              <span className="font-bold text-slate-800">{METRICS.calmar.active.toFixed(2)}</span>
             </div>
           </div>
         </div>
@@ -236,25 +241,25 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 Cumulative Growth of Capital — Active vs. Passive vs. Benchmark
               </h2>
-              <AuditBadge type="CALCULATED_METRIC" />
+              <AuditBadge type="SIMULATED" />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Base 100 normalized performance starting Jan 2021 through March 2025 (4.25-Year Track Record). Active incorporates 25 bps transaction costs & quarterly rebalancing.
+              Simulated price paths (illustrative), base 100, Jan 2021 – Mar 2025. Legend returns come from the model inputs in the tear sheet; the plotted paths are illustrative and are not calibrated to them.
             </p>
           </div>
 
           <div className="flex items-center gap-4 text-xs font-mono">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 bg-blue-700 rounded-xs"></span>
-              <span className="text-slate-700 font-semibold">Active Strategy (+105.3%)</span>
+              <span className="text-slate-700 font-semibold">Active Strategy ({sgn(METRICS.totalReturnPct("active"), 1)}%)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 bg-slate-500 rounded-xs"></span>
-              <span className="text-slate-700 font-semibold">Passive Mandate (+81.2%)</span>
+              <span className="text-slate-700 font-semibold">Passive Mandate ({sgn(METRICS.totalReturnPct("passive"), 1)}%)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-3 bg-amber-600 rounded-xs"></span>
-              <span className="text-slate-700 font-semibold">{benchmarkName} (+83.4%)</span>
+              <span className="text-slate-700 font-semibold">{benchmarkName}{benchmark === "NIFTY_BANK" ? ` (${sgn(METRICS.totalReturnPct("benchmark"), 1)}%)` : ""}</span>
             </div>
           </div>
         </div>
@@ -313,7 +318,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               />
               <Line
                 type="monotone"
-                dataKey="benchmarkNiftyBank"
+                dataKey={comparatorKey}
                 stroke="#d97706"
                 strokeWidth={1.5}
                 strokeDasharray="4 4"
@@ -325,15 +330,19 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
         </div>
 
         <div className="mt-3 pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between text-xs text-slate-500 font-mono">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-700">Alpha Attribution:</span>
-            <span>Sector Overweight: +1.42%</span>
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <span className="font-bold text-slate-700">Alpha bridge (% p.a.):</span>
+            <span>Sector +{ALPHA_BRIDGE.sector.toFixed(2)}</span>
             <span>•</span>
-            <span>Factor Tilts: +0.94%</span>
+            <span>Factor tilts +{ALPHA_BRIDGE.factor.toFixed(2)}</span>
             <span>•</span>
-            <span>Transaction Friction Drag: -0.21%</span>
+            <span>Selection &amp; interaction (balancing item) +{ALPHA_BRIDGE.selection.toFixed(2)}</span>
             <span>•</span>
-            <span className="text-emerald-700 font-bold">Net Realized Alpha: +2.18% p.a.</span>
+            <span>Gross +{ALPHA_BRIDGE.gross.toFixed(2)}</span>
+            <span>•</span>
+            <span>Friction −{Math.abs(ALPHA_BRIDGE.friction).toFixed(2)}</span>
+            <span>•</span>
+            <span className="text-emerald-700 font-bold">Net realized alpha +{ALPHA_BRIDGE.net.toFixed(2)} (CAGR excess vs Nifty Bank)</span>
           </div>
           <button
             onClick={() => onNavigateToTab("active_vs_passive")}
@@ -357,7 +366,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 <AuditBadge type="HISTORICAL_OBSERVATION" />
               </div>
               <p className="text-xs text-slate-500">
-                Audited Gross NPA vs Net NPA percentages across pre- and post-merger cycles.
+                Reported Gross NPA vs Net NPA percentages across pre- and post-merger cycles. FY25E is a model estimate (not audited).
               </p>
             </div>
             <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
@@ -410,7 +419,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 <AuditBadge type="CALCULATED_METRIC" />
               </div>
               <p className="text-xs text-slate-500">
-                Total CAR & Common Equity Tier-1 (CET-1) solvency cushion.
+                Total CAR & Common Equity Tier-1 (CET-1) solvency cushion. FY25E is a model estimate.
               </p>
             </div>
             <span className="text-xs font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
@@ -480,10 +489,10 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
               Executive Institutional Metrics Tear Sheet
             </h3>
-            <AuditBadge type="CALCULATED_METRIC" />
+            <AuditBadge type="SIMULATED" />
           </div>
           <span className="text-xs text-slate-500 font-mono">
-            Indian Sovereign Benchmark Rf = 6.80% | FIMMDA Verified
+            Rf = 6.80% (assumed 10Y G-Sec yield; source to be attached)
           </span>
         </div>
 
@@ -495,7 +504,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
                 <th className="py-2.5 px-3">Category</th>
                 <th className="py-2.5 px-3 text-right">Active Strategy</th>
                 <th className="py-2.5 px-3 text-right">Passive Replication</th>
-                <th className="py-2.5 px-3 text-right">{benchmarkName}</th>
+                <th className="py-2.5 px-3 text-right">Nifty Bank (mandate benchmark)</th>
                 <th className="py-2.5 px-3 text-right">Active Delta</th>
                 <th className="py-2.5 px-3 text-center">Classification</th>
               </tr>
