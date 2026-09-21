@@ -104,8 +104,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </nav>
 
       <div className="hidden p-3 lg:block">
-        <div className="rounded-[11px] border border-[#9a7433]/25 bg-[#f7f1e3] p-3 text-[11px] leading-relaxed">
-          <div className="flex items-center gap-1.5 font-semibold text-[#9a7433]">
+        <div className="rounded-[11px] border border-slate-200 bg-slate-50 p-3 text-[11px] leading-relaxed">
+          <div className="flex items-center gap-1.5 font-semibold text-amber-600">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Demo build · not GIPS-verified</span>
           </div>

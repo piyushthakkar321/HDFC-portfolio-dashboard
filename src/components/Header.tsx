@@ -3,6 +3,7 @@
 import React from "react";
 import { ShieldCheck, Download } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
+import { ThemeToggle } from "./ThemeToggle";
 import { BANKING_PEERS, HDFC_FUNDAMENTALS } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
 
@@ -133,11 +134,13 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenAuditModal}
             title="View the 4-tier audit classification rules"
-            className={`${pill} border-[#9a7433]/45 bg-[#9a7433]/15 font-semibold text-[#e8d5ab]`}
+            className={`${pill} border-white/25 bg-white/[0.14] font-semibold text-white`}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Audit rules</span>
           </button>
+
+          <ThemeToggle />
         </div>
       </div>
 
