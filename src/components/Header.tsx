@@ -5,7 +5,8 @@ import { ShieldCheck, Download } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { BANKING_PEERS, HDFC_FUNDAMENTALS } from "@/data/hdfcData";
-import { MARKET_SNAPSHOT, MARKET_CAP_CR, MARKET_CAP_USD_BN } from "@/data/marketSnapshot";
+import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
+import { useLiveQuote } from "@/hooks/useLiveQuote";
 
 export type DashboardTab =
   | "executive"
@@ -30,16 +31,17 @@ interface HeaderProps {
 const FY = HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1];
 const PEER = BANKING_PEERS[0];
 
-const STATS: { label: string; value: React.ReactNode; sub: string; subClass?: string }[] = [
+function buildStats(quote: ReturnType<typeof useLiveQuote>, marketCapCr: number, marketCapUsdBn: number) {
+  return [
   {
     label: "52-week range",
-    value: `₹${MARKET_SNAPSHOT.low52.toFixed(2)} — ₹${MARKET_SNAPSHOT.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    value: `₹${quote.low52.toFixed(2)} — ₹${quote.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
     sub: "Bonus adjusted · reference snapshot",
   },
   {
     label: "Market cap",
-    value: `₹${MARKET_CAP_CR.toLocaleString("en-IN")} Cr`,
-    sub: `₹${MARKET_SNAPSHOT.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares · ~$${MARKET_CAP_USD_BN.toFixed(1)} Bn`,
+    value: `₹${marketCapCr.toLocaleString("en-IN")} Cr`,
+    sub: `₹${quote.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares · ~$${marketCapUsdBn.toFixed(1)} Bn`,
   },
   {
     label: "Valuation",
@@ -62,7 +64,8 @@ const STATS: { label: string; value: React.ReactNode; sub: string; subClass?: st
     sub: "Tactical tilt +450 bps",
     subClass: "text-emerald-600",
   },
-];
+  ];
+}
 
 const pill =
   "flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px]";
@@ -75,6 +78,10 @@ export const Header: React.FC<HeaderProps> = ({
   onExport,
   onOpenAuditModal,
 }) => {
+  const quote = useLiveQuote();
+  const marketCapCr = Math.round(quote.price * MARKET_SNAPSHOT.sharesOutstandingCr);
+  const marketCapUsdBn = (marketCapCr * 1e7) / MARKET_SNAPSHOT.usdInr / 1e9;
+
   return (
     <>
       {/* Control bar (stays visible while scrolling) */}
@@ -83,7 +90,7 @@ export const Header: React.FC<HeaderProps> = ({
           <span className="font-medium text-slate-200">BFSI Alpha & Mandate Analytics</span>
           <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Static reference price · simulated series · see Data integrity
+            {quote.status === "LIVE" ? "Live NSE feed · " : "Static reference price · "}simulated series · see Data integrity
           </span>
         </div>
 
@@ -157,18 +164,24 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-xs">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-slate-500">{MARKET_SNAPSHOT.status === "LIVE" ? "Last traded price" : "Reference price (static)"}</span>
+            <span className="block text-[10px] uppercase tracking-wider text-slate-500">{quote.status === "LIVE" ? "Last traded price" : "Reference price (static)"}</span>
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
-                ₹{MARKET_SNAPSHOT.price.toFixed(2)}
+                ₹{quote.price.toFixed(2)}
               </span>
-              <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 font-mono text-xs font-semibold text-emerald-700">
-                +{MARKET_SNAPSHOT.change.toFixed(2)} (+{MARKET_SNAPSHOT.changePct.toFixed(2)}%)
+              <span
+                className={`rounded-md px-1.5 py-0.5 font-mono text-xs font-semibold ${
+                  quote.change >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                }`}
+              >
+                {quote.change >= 0 ? "+" : ""}
+                {quote.change.toFixed(2)} ({quote.change >= 0 ? "+" : ""}
+                {quote.changePct.toFixed(2)}%)
               </span>
             </div>
           </div>
 
-          {STATS.map((s) => (
+          {buildStats(quote, marketCapCr, marketCapUsdBn).map((s) => (
             <div key={s.label} className="border-l border-slate-200 pl-6">
               <span className="block text-[10px] uppercase tracking-wider text-slate-500">{s.label}</span>
               <span className="font-mono font-semibold text-slate-800">{s.value}</span>
