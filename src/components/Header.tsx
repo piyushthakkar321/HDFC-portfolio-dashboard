@@ -3,10 +3,9 @@
 import React from "react";
 import { ShieldCheck, Download } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
-import { ThemeToggle } from "./ThemeToggle";
 import { BANKING_PEERS, HDFC_FUNDAMENTALS } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
-import { useLiveQuote } from "@/hooks/useLiveQuote";
+
 
 export type DashboardTab =
   | "executive"
@@ -31,17 +30,17 @@ interface HeaderProps {
 const FY = HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1];
 const PEER = BANKING_PEERS[0];
 
-function buildStats(quote: ReturnType<typeof useLiveQuote>, marketCapCr: number, marketCapUsdBn: number) {
+function buildStats(price: number, marketCapCr: number, marketCapUsdBn: number) {
   return [
   {
     label: "52-week range",
-    value: `₹${quote.low52.toFixed(2)} — ₹${quote.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-    sub: "Bonus adjusted · reference snapshot",
+    value: `₹${MARKET_SNAPSHOT.low52.toFixed(2)} — ₹${MARKET_SNAPSHOT.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
+    sub: `Bonus adjusted · as of ${MARKET_SNAPSHOT.asOfDate}`,
   },
   {
     label: "Market cap",
     value: `₹${marketCapCr.toLocaleString("en-IN")} Cr`,
-    sub: `₹${quote.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares · ~$${marketCapUsdBn.toFixed(1)} Bn`,
+    sub: `₹${price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares · ~$${marketCapUsdBn.toFixed(1)} Bn`,
   },
   {
     label: "Valuation",
@@ -68,7 +67,7 @@ function buildStats(quote: ReturnType<typeof useLiveQuote>, marketCapCr: number,
 }
 
 const pill =
-  "flex items-center gap-1.5 rounded-lg border border-white/15 bg-white/10 px-2.5 py-1.5 text-[11px]";
+  "flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.07] px-2.5 py-1.5 text-[11px] backdrop-blur-sm transition hover:border-[#9a7433]/50 hover:bg-white/[0.12]";
 
 export const Header: React.FC<HeaderProps> = ({
   benchmark,
@@ -78,8 +77,10 @@ export const Header: React.FC<HeaderProps> = ({
   onExport,
   onOpenAuditModal,
 }) => {
-  const quote = useLiveQuote();
-  const marketCapCr = Math.round(quote.price * MARKET_SNAPSHOT.sharesOutstandingCr);
+  // Single reference price for every derived figure (market cap, P/E, P/B, upside, day change).
+  // A live quote, if fetched, is shown only as a separate informational check and never feeds calculations.
+  const price = MARKET_SNAPSHOT.price;
+  const marketCapCr = Math.round(price * MARKET_SNAPSHOT.sharesOutstandingCr);
   const marketCapUsdBn = (marketCapCr * 1e7) / MARKET_SNAPSHOT.usdInr / 1e9;
 
   return (
@@ -88,9 +89,9 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="topbar sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs lg:px-6">
         <div className="flex items-center gap-3">
           <span className="font-medium text-slate-200">BFSI Alpha & Mandate Analytics</span>
-          <span className="flex items-center gap-1.5 text-[11px] text-emerald-400">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            {quote.status === "LIVE" ? "Live NSE feed · " : "Static reference price · "}simulated series · see Data integrity
+          <span className="flex items-center gap-1.5 text-[11px] text-amber-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
+            Static reference price ({MARKET_SNAPSHOT.asOfDate}) · simulated series · see Data integrity
           </span>
         </div>
 
@@ -132,13 +133,11 @@ export const Header: React.FC<HeaderProps> = ({
           <button
             onClick={onOpenAuditModal}
             title="View the 4-tier audit classification rules"
-            className={`${pill} border-blue-400/40 bg-blue-500/20 font-semibold text-blue-100 transition hover:bg-blue-500/30`}
+            className={`${pill} border-[#9a7433]/45 bg-[#9a7433]/15 font-semibold text-[#e8d5ab]`}
           >
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Audit rules</span>
           </button>
-
-          <ThemeToggle />
         </div>
       </div>
 
@@ -146,7 +145,9 @@ export const Header: React.FC<HeaderProps> = ({
       <section className="snapshot flex flex-wrap items-center justify-between gap-x-10 gap-y-4 px-4 py-5 lg:px-8">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-[1.4rem] font-bold tracking-tight text-slate-900">HDFC Bank Limited</h1>
+            <h1 className="font-serif text-[1.55rem] font-semibold tracking-[-0.02em] text-[#16181d]">
+              HDFC Bank Limited
+            </h1>
             <span className="rounded-md bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] font-bold text-slate-800">
               NSE: HDFCBANK
             </span>
@@ -164,24 +165,26 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-xs">
           <div>
-            <span className="block text-[10px] uppercase tracking-wider text-slate-500">{quote.status === "LIVE" ? "Last traded price" : "Reference price (static)"}</span>
+            <span className="block text-[10px] uppercase tracking-wider text-slate-500">
+              Illustrative price · as of {MARKET_SNAPSHOT.asOfDate}
+            </span>
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
-                ₹{quote.price.toFixed(2)}
+                ₹{price.toFixed(2)}
               </span>
               <span
                 className={`rounded-md px-1.5 py-0.5 font-mono text-xs font-semibold ${
-                  quote.change >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                  MARKET_SNAPSHOT.change >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
                 }`}
               >
-                {quote.change >= 0 ? "+" : ""}
-                {quote.change.toFixed(2)} ({quote.change >= 0 ? "+" : ""}
-                {quote.changePct.toFixed(2)}%)
+                {MARKET_SNAPSHOT.change >= 0 ? "+" : ""}
+                {MARKET_SNAPSHOT.change.toFixed(2)} ({MARKET_SNAPSHOT.change >= 0 ? "+" : ""}
+                {MARKET_SNAPSHOT.changePct.toFixed(2)}%)
               </span>
             </div>
           </div>
 
-          {buildStats(quote, marketCapCr, marketCapUsdBn).map((s) => (
+          {buildStats(price, marketCapCr, marketCapUsdBn).map((s) => (
             <div key={s.label} className="border-l border-slate-200 pl-6">
               <span className="block text-[10px] uppercase tracking-wider text-slate-500">{s.label}</span>
               <span className="font-mono font-semibold text-slate-800">{s.value}</span>

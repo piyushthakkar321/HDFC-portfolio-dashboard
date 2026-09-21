@@ -13,6 +13,7 @@ export const MARKET_SNAPSHOT = {
   usdInr: 83.3, // assumption used only for the USD market-cap display
   status: "STATIC" as "STATIC" | "LIVE",
   statusLabel: "Static reference price (no live feed connected)",
+  asOfDate: "20 Mar 2025", // analysis date: this model is frozen here; later real-world events (e.g. the Aug 2025 bonus) are noted as subsequent events, not baked into the series
 } as const;
 
 export const MARKET_CAP_CR = Math.round(MARKET_SNAPSHOT.price * MARKET_SNAPSHOT.sharesOutstandingCr);

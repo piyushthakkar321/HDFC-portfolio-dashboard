@@ -1,5 +1,5 @@
 import { MARKET_SNAPSHOT, MARKET_CAP_CR } from "./marketSnapshot";
-import { METRICS, NET_ALPHA, RISK_FREE, PERIOD_YEARS, inr, pct, pp, sgn, spct } from "./metrics";
+import { METRICS, NET_ALPHA, RISK_FREE, PERIOD_YEARS, FRICTION_DRAG, GROSS_ALPHA, inr, pct, pp, sgn, spct } from "./metrics";
 
 // Institutional Data Store for HDFC Bank — Active vs Passive Portfolio Management
 // All data derived from Audited Annual Reports (FY20-FY24), Q3 FY25 Disclosures, NSE Historical Trading Records, and RBI DBIE.
@@ -98,7 +98,13 @@ export interface StrategyPerformancePoint {
 export interface MonthlyReturnCell {
   year: number;
   returns: (number | null)[]; // 12 months: Jan..Dec
-  ytd: number;
+}
+
+// YTD is compounded from the monthly cells, never stored separately, so it cannot drift from them.
+// YTD = Π(1 + monthly%) − 1, skipping months not yet reported (null).
+export function computeYtd(returns: (number | null)[]): number {
+  const compounded = returns.reduce((acc: number, m) => (m === null ? acc : acc * (1 + m / 100)), 1);
+  return Math.round((compounded - 1) * 10000) / 100;
 }
 
 // 1. AUDITED FUNDAMENTAL HISTORICAL METRICS
@@ -526,36 +532,12 @@ export const BANKING_PEERS: PeerComparison[] = [
 
 // 4. MONTHLY RETURNS MATRIX (2020 - 2025)
 export const MONTHLY_RETURNS: MonthlyReturnCell[] = [
-  {
-    year: 2020,
-    returns: [2.1, -5.4, -28.2, 8.5, -4.2, 11.4, -1.8, 8.9, -3.1, 12.5, 21.4, 3.2],
-    ytd: 15.6,
-  },
-  {
-    year: 2021,
-    returns: [-3.8, 14.2, -6.1, -5.2, 6.8, -0.4, -4.1, 10.8, 1.2, 5.8, -4.9, -1.2],
-    ytd: 10.9,
-  },
-  {
-    year: 2022,
-    returns: [-1.4, -3.9, 5.2, -7.8, -1.2, -3.5, 6.2, 3.8, -4.1, 5.2, 6.4, 0.8],
-    ytd: 5.1,
-  },
-  {
-    year: 2023,
-    returns: [-2.1, -1.8, 0.4, 5.1, -2.4, 5.8, -3.2, -4.1, -3.8, -3.1, 5.4, 9.2],
-    ytd: 4.6,
-  },
-  {
-    year: 2024,
-    returns: [-14.4, -0.8, 4.2, 4.8, 1.2, 11.5, -1.2, 0.8, 2.4, -1.8, 3.5, 0.4],
-    ytd: 8.7,
-  },
-  {
-    year: 2025,
-    returns: [-3.2, 2.1, 3.4, null, null, null, null, null, null, null, null, null],
-    ytd: 2.2,
-  },
+  { year: 2020, returns: [2.1, -5.4, -28.2, 8.5, -4.2, 11.4, -1.8, 8.9, -3.1, 12.5, 21.4, 3.2] },
+  { year: 2021, returns: [-3.8, 14.2, -6.1, -5.2, 6.8, -0.4, -4.1, 10.8, 1.2, 5.8, -4.9, -1.2] },
+  { year: 2022, returns: [-1.4, -3.9, 5.2, -7.8, -1.2, -3.5, 6.2, 3.8, -4.1, 5.2, 6.4, 0.8] },
+  { year: 2023, returns: [-2.1, -1.8, 0.4, 5.1, -2.4, 5.8, -3.2, -4.1, -3.8, -3.1, 5.4, 9.2] },
+  { year: 2024, returns: [-14.4, -0.8, 4.2, 4.8, 1.2, 11.5, -1.2, 0.8, 2.4, -1.8, 3.5, 0.4] },
+  { year: 2025, returns: [-3.2, 2.1, 3.4, null, null, null, null, null, null, null, null, null] },
 ];
 
 // Helper to generate realistic daily time series
@@ -897,13 +879,12 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
   {
     metric: "Jensen's Alpha (vs Nifty Bank)",
     category: "Risk-Adjusted",
-    activeStrategy: "+2.24% p.a.",
-    passiveStrategy: "-0.22% p.a.",
+    activeStrategy: `${spct(M.jensen.active)} p.a.`,
+    passiveStrategy: `${spct(M.jensen.passive)} p.a.`,
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+2.46 pp",
-    badge: "SCENARIO_ASSUMPTION",
-    formulaExplanation:
-      "Regression intercept from a CAPM fit of monthly returns against Nifty Bank. It is a different quantity from Net Realized Alpha (CAGR excess over Nifty Bank, +2.18 pp), so the two figures are not expected to match. Stored model input, not recomputed from the simulated series.",
+    deltaVsPassive: pp(M.jensen.active - M.jensen.passive),
+    badge: "CALCULATED_METRIC",
+    formulaExplanation: `Jensen's alpha = CAGR − [Rf + beta × (benchmark CAGR − Rf)]. Active: ${M.cagr.active.toFixed(2)}% − [${RISK_FREE.toFixed(2)}% + ${M.beta.active.toFixed(2)} × (${M.cagr.benchmark.toFixed(2)}% − ${RISK_FREE.toFixed(2)}%)] = ${spct(M.jensen.active)}%. A CAPM-style estimate using annual CAGR as a single-period proxy — not a full regression, so it will differ from Net Realized Alpha (${spct(NET_ALPHA)} pp), which is the plain CAGR gap.`,
   },
   {
     metric: "Information Ratio (IR)",
@@ -980,12 +961,11 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
   {
     metric: "Total Fee & Execution Friction Drag",
     category: "Execution & Cost",
-    activeStrategy: "1.45% p.a.",
+    activeStrategy: `${FRICTION_DRAG.toFixed(2)}% p.a.`,
     passiveStrategy: "0.22% p.a.",
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+1.23 pp p.a.",
+    deltaVsPassive: pp(FRICTION_DRAG - 0.22),
     badge: "SCENARIO_ASSUMPTION",
-    formulaExplanation:
-      "Management Expense Ratio (TER 1.20% Active vs 0.15% ETF) plus an assumed 25 bps friction per unit of traded value. Stored model input.",
+    formulaExplanation: `Same friction figure used in the alpha bridge (gross ${GROSS_ALPHA.toFixed(2)}% − friction ${FRICTION_DRAG.toFixed(2)}% = net ${NET_ALPHA.toFixed(2)}%). At 14.2% annual turnover and 25 bps per trade, direct transaction cost is under 0.1% p.a.; the remainder of the ${FRICTION_DRAG.toFixed(2)}% is management fee / TER drag, shown together here as one total.`,
   },
 ];

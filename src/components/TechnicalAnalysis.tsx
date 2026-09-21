@@ -28,7 +28,7 @@ import {
   Info,
 } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
-import { generateTimeSeries, MONTHLY_RETURNS, dataThrough } from "@/data/hdfcData";
+import { generateTimeSeries, MONTHLY_RETURNS, dataThrough, computeYtd } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
 import { sgn } from "@/data/metrics";
 
@@ -428,7 +428,7 @@ export const TechnicalAnalysis: React.FC = () => {
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 HDFC Bank Historical Monthly Returns Matrix (% Seasonality)
               </h3>
-              <AuditBadge type="HISTORICAL_OBSERVATION" />
+              <AuditBadge type="SIMULATED" />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
               Monthly percentage returns, January 2020 – March 2025. Return type: price return (assumed) · dividend-adjusted: no · bonus-adjusted: 1:1 Aug 2025 · source: stored dataset, not yet tied to an NSE extract (verify before external use).
@@ -460,7 +460,9 @@ export const TechnicalAnalysis: React.FC = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 font-mono">
-              {MONTHLY_RETURNS.map((m) => (
+              {MONTHLY_RETURNS.map((m) => {
+                const ytd = computeYtd(m.returns);
+                return (
                 <tr key={m.year} className="hover:bg-slate-50/70 transition">
                   <td className="py-2 px-2 font-sans font-bold text-slate-900 text-left">
                     {m.year}
@@ -494,13 +496,14 @@ export const TechnicalAnalysis: React.FC = () => {
                   })}
                   <td
                     className={`py-2 px-2 font-bold ${
-                      m.ytd >= 0 ? "text-emerald-800 bg-emerald-100/60" : "text-rose-800 bg-rose-100/60"
+                      ytd >= 0 ? "text-emerald-800 bg-emerald-100/60" : "text-rose-800 bg-rose-100/60"
                     }`}
                   >
-                    {m.ytd >= 0 ? `+${m.ytd.toFixed(1)}%` : `${m.ytd.toFixed(1)}%`}
+                    {ytd >= 0 ? `+${ytd.toFixed(1)}%` : `${ytd.toFixed(1)}%`}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
             </tbody>
           </table>
         </div>

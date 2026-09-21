@@ -49,6 +49,8 @@ export const FundamentalAnalysis: React.FC = () => {
     ? BANKING_PEERS
     : BANKING_PEERS.filter((p) => p.category === selectedPeerCategory);
 
+  const isEst = (fy: string) => fy.endsWith("E");
+
   const revenueData = HDFC_FUNDAMENTALS.map((f) => ({
     year: f.fiscalYear,
     nii: f.nii,
@@ -57,6 +59,12 @@ export const FundamentalAnalysis: React.FC = () => {
     pat: f.pat,
     ppop: f.ppop,
     provisions: f.provisions,
+    isEstimate: isEst(f.fiscalYear),
+    // Estimate-only series: null for actual years so the dashed "estimate" line
+    // only draws across the FY24 -> FY25E segment (FY24 repeated as the anchor point).
+    ppopEst: isEst(f.fiscalYear) || f.fiscalYear === "FY24" ? f.ppop : null,
+    patEst: isEst(f.fiscalYear) || f.fiscalYear === "FY24" ? f.pat : null,
+    provisionsEst: isEst(f.fiscalYear) || f.fiscalYear === "FY24" ? f.provisions : null,
   }));
 
   const marginAndRatios = HDFC_FUNDAMENTALS.map((f) => ({
@@ -65,6 +73,9 @@ export const FundamentalAnalysis: React.FC = () => {
     roe: f.roe,
     roa: f.roa,
     costToIncome: f.costToIncome,
+    isEstimate: isEst(f.fiscalYear),
+    nimEst: isEst(f.fiscalYear) || f.fiscalYear === "FY24" ? f.nim : null,
+    roaEst: isEst(f.fiscalYear) || f.fiscalYear === "FY24" ? f.roa : null,
   }));
 
   const epsAndBvps = HDFC_FUNDAMENTALS.map((f) => ({
@@ -72,6 +83,7 @@ export const FundamentalAnalysis: React.FC = () => {
     eps: f.eps,
     unadjustedEps: f.unadjustedEps,
     bvps: f.bvps,
+    isEstimate: isEst(f.fiscalYear),
   }));
 
   return (
@@ -166,10 +178,22 @@ export const FundamentalAnalysis: React.FC = () => {
                       formatter={(val: any) => [`₹${Number(val).toLocaleString("en-IN")} Cr`]}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                    <Bar dataKey="nii" name="Net Interest Income (NII)" stackId="a" fill="#1e3a8a" />
-                    <Bar dataKey="otherIncome" name="Non-Interest Income" stackId="a" fill="#38bdf8" />
+                    <Bar dataKey="nii" name="Net Interest Income (NII)" stackId="a" fill="#1e3a8a">
+                      {revenueData.map((d, i) => (
+                        <Cell key={i} fillOpacity={d.isEstimate ? 0.45 : 1} stroke={d.isEstimate ? "#1e3a8a" : "none"} strokeDasharray={d.isEstimate ? "3 2" : undefined} />
+                      ))}
+                    </Bar>
+                    <Bar dataKey="otherIncome" name="Non-Interest Income" stackId="a" fill="#38bdf8">
+                      {revenueData.map((d, i) => (
+                        <Cell key={i} fillOpacity={d.isEstimate ? 0.45 : 1} stroke={d.isEstimate ? "#38bdf8" : "none"} strokeDasharray={d.isEstimate ? "3 2" : undefined} />
+                      ))}
+                    </Bar>
                   </BarChart>
                 </ResponsiveContainer>
+              </div>
+              <div className="mt-2 flex items-center gap-3 text-[10px] text-slate-500">
+                <span className="flex items-center gap-1"><span className="w-3 h-2.5 bg-slate-700 inline-block rounded-xs"></span> Actual (FY20–FY24)</span>
+                <span className="flex items-center gap-1"><span className="w-3 h-2.5 bg-slate-700/45 border border-dashed border-slate-500 inline-block rounded-xs"></span> Estimate (FY25E)</span>
               </div>
 
               <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
@@ -215,12 +239,15 @@ export const FundamentalAnalysis: React.FC = () => {
                       formatter={(val: any) => [`₹${Number(val).toLocaleString("en-IN")} Cr`]}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                    <Line type="monotone" dataKey="ppop" name="PPOP (Operating Profit)" stroke="#1d4ed8" strokeWidth={2.5} />
-                    <Line type="monotone" dataKey="pat" name="Net Profit (PAT)" stroke="#059669" strokeWidth={2.5} />
+                    <Line type="monotone" dataKey="ppop" name="PPOP (Operating Profit)" stroke="#1d4ed8" strokeWidth={2.5} connectNulls={false} data={revenueData.filter((d) => !d.isEstimate)} />
+                    <Line type="monotone" dataKey="ppopEst" name="PPOP (FY25E estimate)" stroke="#1d4ed8" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} legendType="none" />
+                    <Line type="monotone" dataKey="pat" name="Net Profit (PAT)" stroke="#059669" strokeWidth={2.5} connectNulls={false} data={revenueData.filter((d) => !d.isEstimate)} />
+                    <Line type="monotone" dataKey="patEst" name="PAT (FY25E estimate)" stroke="#059669" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} legendType="none" />
                     <Line type="monotone" dataKey="provisions" name="Provisions" stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 3" />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
+              <div className="mt-2 text-[10px] text-slate-500">Dashed segment = FY25E estimate, not audited.</div>
 
               <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
                 <strong className="text-slate-800">Analytical Audit:</strong> FY24 provisions included ₹10,900 Cr of one-time floating / contingent provisions built prudently upon merger consummation, insulating future earnings against systemic credit surprises.

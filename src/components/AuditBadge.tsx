@@ -88,11 +88,11 @@ export const AuditBadge: React.FC<AuditBadgeProps> = ({
         onClick={() => setOpen(!open)}
         onMouseEnter={() => setOpen(true)}
         onMouseLeave={() => setOpen(false)}
-        className={`inline-flex items-center gap-1 font-mono uppercase tracking-wider font-semibold border rounded ${
+        className={`inline-flex items-center gap-1 font-mono uppercase tracking-[0.09em] font-semibold border rounded-[5px] ${
           cfg.bg
         } ${cfg.text} ${cfg.border} ${
-          size === "xs" ? "text-[10px] px-1.5 py-0.5" : "text-xs px-2 py-1"
-        } transition-colors hover:brightness-95 cursor-help`}
+          size === "xs" ? "text-[9.5px] px-1.5 py-[3px]" : "text-[11px] px-2 py-1"
+        } opacity-80 transition hover:opacity-100 cursor-help`}
         title={cfg.desc}
       >
         <span>{customText || cfg.code}</span>
@@ -100,7 +100,7 @@ export const AuditBadge: React.FC<AuditBadgeProps> = ({
       </button>
 
       {open && (
-        <div className="absolute z-50 bottom-full left-0 mb-1.5 w-64 p-2.5 bg-slate-900 text-slate-100 text-xs rounded shadow-xl border border-slate-700 pointer-events-none">
+        <div className="absolute z-50 bottom-full left-0 mb-1.5 w-64 rounded-[9px] border border-[#9a7433]/30 bg-[#101827] p-2.5 text-xs text-[#e9e6df] shadow-[0_18px_36px_-20px_rgba(16,18,29,0.9)] pointer-events-none">
           <div className="flex items-center justify-between pb-1 mb-1 border-b border-slate-700 text-[11px] font-bold text-slate-300">
             <span>{cfg.label}</span>
             <span className="font-mono text-[9px] px-1 bg-slate-800 rounded">

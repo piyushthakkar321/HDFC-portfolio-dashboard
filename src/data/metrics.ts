@@ -60,6 +60,12 @@ export const METRICS = {
     active: INPUT.netAlpha / INPUT.trackingError.active,
     passive: (cagrPassive - cagrBenchmark) / INPUT.trackingError.passive,
   },
+  // Jensen's alpha = CAGR − [Rf + beta × (benchmark CAGR − Rf)], computed from the same
+  // Rf, beta and CAGR inputs shown elsewhere on the dashboard, so this always reproduces.
+  jensen: {
+    active: cagrActive - (RISK_FREE + INPUT.beta.active * (cagrBenchmark - RISK_FREE)),
+    passive: cagrPassive - (RISK_FREE + INPUT.beta.passive * (cagrBenchmark - RISK_FREE)),
+  },
   // Tracking difference vs Nifty Bank, % p.a.
   td: { active: cagrActive - cagrBenchmark, passive: cagrPassive - cagrBenchmark },
   totalReturnPct: (k: keyof Trio) => (terminal[k] / INITIAL_CAPITAL - 1) * 100,

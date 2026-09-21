@@ -78,7 +78,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       >
         {GROUPS.map((group) => (
           <div key={group.label} className="flex gap-1 lg:mb-4 lg:flex-col">
-            <div className="hidden px-3 pb-1 text-[11px] font-medium text-slate-400 lg:block">{group.label}</div>
+            <div className="hidden px-3 pb-1.5 text-[9.5px] font-semibold uppercase tracking-[0.13em] text-slate-400 lg:block">
+              {group.label}
+            </div>
             {group.items.map((item) => {
               const Icon = item.icon;
               const active = activeTab === item.id;
@@ -102,8 +104,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
       </nav>
 
       <div className="hidden p-3 lg:block">
-        <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-[11px] leading-relaxed">
-          <div className="flex items-center gap-1.5 font-semibold text-amber-600">
+        <div className="rounded-[11px] border border-[#9a7433]/25 bg-[#f7f1e3] p-3 text-[11px] leading-relaxed">
+          <div className="flex items-center gap-1.5 font-semibold text-[#9a7433]">
             <ShieldCheck className="h-3.5 w-3.5" />
             <span>Demo build · not GIPS-verified</span>
           </div>

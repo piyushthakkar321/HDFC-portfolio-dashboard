@@ -15,15 +15,9 @@ export const metadata: Metadata = {
     "Institutional banking analytics workstation for portfolio managers, equity research analysts, and investment committees. Real audited financials, quantitative factor models, and stress scenario engine.",
 };
 
-// Light is the default; dark is applied only if the user chose it before.
-const themeScript = `try{if(localStorage.getItem("apex-theme")==="dark"){document.documentElement.classList.add("dark")}}catch(e){}`;
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning className={inter.variable}>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
       <body className="font-sans antialiased">{children}</body>
     </html>
   );
