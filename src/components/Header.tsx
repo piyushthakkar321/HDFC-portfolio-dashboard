@@ -85,10 +85,18 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuditModal,
 }) => {
   // Single reference price for every derived figure (market cap, P/E, P/B, upside, day change).
-  // A live quote, if fetched, is shown only as a separate informational check below and never feeds
-  // any calculation on this page — the workstation stays in FROZEN mode regardless of its value.
-  const price = MARKET_SNAPSHOT.price;
+  // When a live quote is available (LIVE or STALE-but-recent), it now drives the headline price
+  // and everything computed from it. Falls back to the frozen 20-Mar-2025 reference price if the
+  // live feed is down, so the page never shows a blank/zero price.
   const liveQuote = useLiveQuote();
+  const isLive = liveQuote.status === "LIVE" || liveQuote.status === "STALE";
+  const price = isLive ? liveQuote.price : MARKET_SNAPSHOT.price;
+  const dayChange = isLive ? liveQuote.change : MARKET_SNAPSHOT.change;
+  const dayChangePct = isLive ? liveQuote.changePct : MARKET_SNAPSHOT.changePct;
+  const priceLabel = isLive ? "Live price" : "Illustrative price (live feed down)";
+  const priceAsOf = isLive && liveQuote.asOf
+    ? new Date(liveQuote.asOf).toLocaleTimeString()
+    : MARKET_SNAPSHOT.asOfDate;
   const marketCapCr = Math.round(price * MARKET_SNAPSHOT.sharesOutstandingCr);
   const marketCapUsdBn = (marketCapCr * 1e7) / MARKET_SNAPSHOT.usdInr / 1e9;
 
@@ -98,55 +106,43 @@ export const Header: React.FC<HeaderProps> = ({
       <div className="topbar sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 px-4 py-2.5 text-xs lg:px-6">
         <div className="flex items-center gap-3">
           <span className="font-medium text-slate-200">BFSI Alpha & Mandate Analytics</span>
-          <span className="flex items-center gap-1.5 text-[11px] text-amber-400">
-            <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
-            Static reference price ({MARKET_SNAPSHOT.asOfDate}) · simulated series · see Data integrity
+          <span className={`flex items-center gap-1.5 text-[11px] ${isLive ? "text-emerald-400" : "text-amber-400"}`}>
+            <span className={`h-1.5 w-1.5 rounded-full ${isLive ? "bg-emerald-400" : "bg-amber-400"}`} />
+            {isLive
+              ? "Live reference price · technical/financial series still simulated · see Data integrity"
+              : `Static reference price (${MARKET_SNAPSHOT.asOfDate}) · simulated series · see Data integrity`}
           </span>
-          {(liveQuote.status === "LIVE" || liveQuote.status === "STALE") && (
+          <span
+            className={`flex items-center gap-1.5 rounded-md border px-2 py-1 text-[11px] ${
+              isLive
+                ? "border-white/12 bg-white/[0.06] text-slate-300"
+                : liveQuote.status === "LOADING"
+                ? "border-white/12 bg-white/[0.06] text-slate-400"
+                : "border-rose-400/30 bg-rose-500/10 text-rose-300"
+            }`}
+            title={
+              isLive
+                ? `Driving the headline price below. Fetched ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : ""} via ${liveQuote.source ?? "unknown source"}.${liveQuote.errorMessage ? ` Note: ${liveQuote.errorMessage}` : ""}`
+                : liveQuote.errorMessage ?? "Live feed unavailable — showing static reference price"
+            }
+          >
             <span
-              className="flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[11px] text-slate-300"
-              title={`Live check only — not used in any calculation on this page. Fetched ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : ""} via ${liveQuote.source ?? "unknown source"}.${liveQuote.errorMessage ? ` Note: ${liveQuote.errorMessage}` : ""}`}
-            >
-              <span
-                className={`h-1.5 w-1.5 rounded-full ${
-                  liveQuote.status === "LIVE" ? "bg-emerald-400" : "bg-amber-400"
-                }`}
-              />
-              Live check: ₹{liveQuote.price.toFixed(2)}
-              <span className={liveQuote.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
-                ({liveQuote.changePct >= 0 ? "+" : ""}
-                {liveQuote.changePct.toFixed(2)}%)
-              </span>
-              {liveQuote.status === "STALE" ? (
-                <span className="text-amber-400">
-                  · stale (no update since {liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : "—"})
-                </span>
-              ) : liveQuote.source && liveQuote.source !== "yahoo" ? (
-                <span className="text-amber-400">· via fallback feed ({liveQuote.source})</span>
-              ) : (
-                <span className="text-slate-500">· for comparison only, not used in calculations</span>
-              )}
-            </span>
-          )}
-
-          {liveQuote.status === "LOADING" && (
-            <span className="flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[11px] text-slate-400">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />
-              Live check: connecting…
-            </span>
-          )}
-
-          {liveQuote.status === "ERROR" && (
-            <span
-              className="flex items-center gap-1.5 rounded-md border border-rose-400/30 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-300"
-              title={liveQuote.errorMessage ?? "Live feed unavailable"}
-            >
-              <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
-              Live feed unavailable
-              {liveQuote.consecutiveFailures > 1 ? ` (${liveQuote.consecutiveFailures} failed attempts)` : ""}
-              <span className="text-rose-400/70">· showing static reference price only</span>
-            </span>
-          )}
+              className={`h-1.5 w-1.5 rounded-full ${
+                liveQuote.status === "LIVE"
+                  ? "bg-emerald-400"
+                  : liveQuote.status === "STALE"
+                  ? "bg-amber-400"
+                  : liveQuote.status === "LOADING"
+                  ? "animate-pulse bg-slate-400"
+                  : "bg-rose-400"
+              }`}
+            />
+            {liveQuote.status === "LOADING" && "Live feed: connecting…"}
+            {liveQuote.status === "LIVE" && `Live feed OK · via ${liveQuote.source ?? "yahoo"}`}
+            {liveQuote.status === "STALE" && `Live feed stale since ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : "—"}`}
+            {liveQuote.status === "ERROR" &&
+              `Live feed down${liveQuote.consecutiveFailures > 1 ? ` (${liveQuote.consecutiveFailures} attempts)` : ""} · showing static price`}
+          </span>
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
@@ -210,7 +206,10 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-800">
               Large-cap BFSI
             </span>
-            <AuditBadge type="SIMULATED" customText="STATIC" />
+            <AuditBadge
+              type={isLive ? "HISTORICAL_OBSERVATION" : "SIMULATED"}
+              customText={isLive ? "LIVE" : "STATIC"}
+            />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
             <span className="font-mono">ISIN INE040A01034</span>
@@ -222,7 +221,7 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="flex flex-wrap items-center gap-x-7 gap-y-3 text-xs">
           <div>
             <span className="block text-[10px] uppercase tracking-wider text-slate-500">
-              Illustrative price · as of {MARKET_SNAPSHOT.asOfDate}
+              {priceLabel} · as of {priceAsOf}
             </span>
             <div className="flex items-baseline gap-2">
               <span className="font-mono text-[1.65rem] font-bold leading-tight tracking-tight text-slate-900">
@@ -230,12 +229,12 @@ export const Header: React.FC<HeaderProps> = ({
               </span>
               <span
                 className={`rounded-md px-1.5 py-0.5 font-mono text-xs font-semibold ${
-                  MARKET_SNAPSHOT.change >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                  dayChange >= 0 ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
                 }`}
               >
-                {MARKET_SNAPSHOT.change >= 0 ? "+" : ""}
-                {MARKET_SNAPSHOT.change.toFixed(2)} ({MARKET_SNAPSHOT.change >= 0 ? "+" : ""}
-                {MARKET_SNAPSHOT.changePct.toFixed(2)}%)
+                {dayChange >= 0 ? "+" : ""}
+                {dayChange.toFixed(2)} ({dayChange >= 0 ? "+" : ""}
+                {dayChangePct.toFixed(2)}%)
               </span>
             </div>
           </div>
