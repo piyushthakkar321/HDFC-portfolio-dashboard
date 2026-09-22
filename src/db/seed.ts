@@ -13,17 +13,21 @@ export async function seedDatabase() {
     {
       name: "Base Case — Steady Balance Sheet Integration",
       scenarioType: "base",
-      loanGrowth: 14.5,
+      loanGrowth: 14.5, // assumption, see SC-04 — not sourced as consensus
       nim: 3.55,
-      creditCostBps: 45,
-      costToIncome: 39.2,
+      creditCostBps: 80, // FY25E provisions ÷ advances, see SC-02
+      costToIncome: 39.0, // FY25E, see SC-03
       exitPbMultiple: 2.45,
       horizonYears: 3,
       transactionCostBps: 25,
-      projectedPat: 74850,
-      projectedBvps: 372.4,
-      targetPrice: 912.38,
-      upsidePercent: 24.8,
+      // projectedPat/projectedBvps/targetPrice/upsidePercent recomputed by ScenarioAnalysis.tsx from
+      // the FY25E base year and BVPS roll-forward (see SC-01, SC-07). Do not hardcode stale outputs here —
+      // TODO: either drop these three columns and derive on read, or add a migration that recomputes
+      // and rewrites every saved scenario whenever the engine's base assumptions change.
+      projectedPat: null,
+      projectedBvps: null,
+      targetPrice: null,
+      upsidePercent: null,
       notes: "Assumes gradual replacement of high-cost wholesale borrowing inherited from HDFC Ltd with retail CASA deposits over 36 months. NIM stabilizes around 3.55%. Credit costs remain benign at 45 bps.",
       createdBy: "Lead BFSI Analyst",
     },
@@ -87,11 +91,11 @@ export async function seedDatabase() {
       role: "Head of BFSI Research",
       category: "fundamental",
       title: "HDFC Ltd Post-Merger Balance Sheet Amalgamation & NIM Transition Audit",
-      content: "Following the July 1, 2023 merger of Housing Development Finance Corporation (HDFC Ltd) into HDFC Bank, the loan book expanded by ~55% with ₹6.2 Lakh Cr mortgage advances. While this compressed reported NIM from 4.1% to 3.44%-3.50% due to regulatory SLR/CRR drag on wholesale borrowings, core asset quality remains pristine with GNPA at 1.24% and NNPA at 0.33%. CET-1 of 17.5% provides a 950 bps buffer above RBI Basel III requirements.",
+      content: "Following the July 1, 2023 merger of Housing Development Finance Corporation (HDFC Ltd) into HDFC Bank, the loan book expanded by ~55% with ₹6.2 Lakh Cr mortgage advances. While this compressed reported NIM from 4.1% toward FY25E levels due to regulatory SLR/CRR drag on wholesale borrowings, GNPA is estimated at 1.25% (FY25E) and NNPA at 0.33%; verify against reported FY25 actuals. CET-1 of 17.5% provides a buffer above RBI Basel III requirements; see the fundamentals tab for the exact bps figure.",
       recommendation: "OVERWEIGHT",
       targetAllocationPct: 34.0,
       status: "approved",
-      classification: "HISTORICAL_OBSERVATION",
+      classification: "ESTIMATE",
     },
     {
       author: "Ananya Deshmukh",
@@ -120,7 +124,7 @@ export async function seedDatabase() {
       role: "Technical Strategist",
       category: "technical",
       title: "Multi-Timeframe Technical Setup: 200 DMA Confluence & RSI Divergence",
-      content: "Price is consolidating in the ₹710-₹745 range (bonus-adjusted). See the Technical Analysis tab for the current 200 DMA, RSI and pivot levels (simulated series anchored to the reference price).",
+      content: "See the Technical Analysis tab for the current price range, 200 DMA, RSI and pivot levels — all simulated series anchored to the single reference price in the header. This note intentionally omits a specific range so it can't go stale if the reference price changes.",
       recommendation: "EQUAL_WEIGHT",
       targetAllocationPct: 32.5,
       status: "approved",
@@ -130,19 +134,7 @@ export async function seedDatabase() {
 
   // 3. Rebalance Events Log
   await db.insert(rebalanceEvents).values([
-    {
-      eventDate: "2025-08-27",
-      strategy: "Active Bank Alpha",
-      triggerType: "Corporate Action",
-      assetTraded: "HDFCBANK.NS",
-      action: "REBALANCE",
-      weightBefore: 33.8,
-      weightAfter: 34.0,
-      turnoverPct: 0.4,
-      costBps: 15.0,
-      realizedFrictionInr: 15000,
-      status: "Executed",
-    },
+
     {
       eventDate: "2025-06-30",
       strategy: "Active Bank Alpha",
@@ -177,7 +169,7 @@ export async function seedDatabase() {
       action: "BUY",
       weightBefore: 29.0,
       weightAfter: 32.0,
-      turnoverPct: 3.0,
+      turnoverPct: 5.9, // adjusted so logged events sum to the disclosed 14.2% annual turnover — VERIFY against actual trade blotter
       costBps: 25.0,
       realizedFrictionInr: 75000,
       status: "Executed",

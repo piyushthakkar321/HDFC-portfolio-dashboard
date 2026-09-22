@@ -6,6 +6,7 @@ import { AuditBadge } from "./AuditBadge";
 import { ThemeToggle } from "./ThemeToggle";
 import { BANKING_PEERS, HDFC_FUNDAMENTALS, generateTimeSeries } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
+import { useLiveQuote } from "@/hooks/useLiveQuote";
 
 
 export type DashboardTab =
@@ -84,8 +85,10 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenAuditModal,
 }) => {
   // Single reference price for every derived figure (market cap, P/E, P/B, upside, day change).
-  // A live quote, if fetched, is shown only as a separate informational check and never feeds calculations.
+  // A live quote, if fetched, is shown only as a separate informational check below and never feeds
+  // any calculation on this page — the workstation stays in FROZEN mode regardless of its value.
   const price = MARKET_SNAPSHOT.price;
+  const liveQuote = useLiveQuote();
   const marketCapCr = Math.round(price * MARKET_SNAPSHOT.sharesOutstandingCr);
   const marketCapUsdBn = (marketCapCr * 1e7) / MARKET_SNAPSHOT.usdInr / 1e9;
 
@@ -99,6 +102,20 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             Static reference price ({MARKET_SNAPSHOT.asOfDate}) · simulated series · see Data integrity
           </span>
+          {liveQuote.status === "LIVE" && (
+            <span
+              className="flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[11px] text-slate-300"
+              title={`Live check only — not used in any calculation on this page. Fetched ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : ""}.`}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              Live check: ₹{liveQuote.price.toFixed(2)}
+              <span className={liveQuote.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
+                ({liveQuote.changePct >= 0 ? "+" : ""}
+                {liveQuote.changePct.toFixed(2)}%)
+              </span>
+              <span className="text-slate-500">· for comparison only, not used in calculations</span>
+            </span>
+          )}
         </div>
 
         <div className="flex flex-wrap items-center gap-2 text-[11px]">
@@ -162,7 +179,7 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="rounded-md bg-blue-100 px-1.5 py-0.5 text-[11px] font-semibold text-blue-800">
               Large-cap BFSI
             </span>
-            <AuditBadge type="HISTORICAL_OBSERVATION" customText="HIST" />
+            <AuditBadge type="SIMULATED" customText="STATIC" />
           </div>
           <div className="mt-1 flex flex-wrap items-center gap-x-3 text-xs text-slate-500">
             <span className="font-mono">ISIN INE040A01034</span>

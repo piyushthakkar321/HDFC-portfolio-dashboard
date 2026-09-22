@@ -9,7 +9,7 @@ import { METRICS, FRICTION_DRAG, TXN_DRAG_PCT, FEE_AND_OTHER_DRAG_PCT, PASSIVE_T
 const SRC = path.resolve(__dirname, "..");
 const walk = (dir: string): string[] =>
   fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
-    e.isDirectory() ? (e.name === "__tests__" ? [] : walk(path.join(dir, e.name))) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : [],
+    e.isDirectory() ? (e.name === "__tests__" || e.name === "__test__" ? [] : walk(path.join(dir, e.name))) : /\.(ts|tsx)$/.test(e.name) ? [path.join(dir, e.name)] : [],
   );
 const FILES = walk(SRC).map((f) => ({ f, lines: fs.readFileSync(f, "utf8").split(/\r?\n/) }));
 const asOf = new Date(MARKET_SNAPSHOT.asOfDate + " UTC");

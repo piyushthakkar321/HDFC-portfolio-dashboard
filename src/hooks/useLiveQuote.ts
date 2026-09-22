@@ -7,9 +7,8 @@ export interface LiveQuote {
   price: number;
   change: number;
   changePct: number;
-  low52: number;
-  high52: number;
   status: "LIVE" | "STATIC";
+  asOf: string | null; // ISO timestamp of the last successful live fetch
 }
 
 const POLL_MS = 45_000;
@@ -19,9 +18,8 @@ export function useLiveQuote(symbol: string = MARKET_SNAPSHOT.symbol): LiveQuote
     price: MARKET_SNAPSHOT.price,
     change: MARKET_SNAPSHOT.change,
     changePct: MARKET_SNAPSHOT.changePct,
-    low52: MARKET_SNAPSHOT.low52,
-    high52: MARKET_SNAPSHOT.high52,
     status: "STATIC",
+    asOf: null,
   });
 
   const mounted = useRef(true);
@@ -40,9 +38,8 @@ export function useLiveQuote(symbol: string = MARKET_SNAPSHOT.symbol): LiveQuote
             price: data.price,
             change: data.change,
             changePct: data.changePct,
-            low52: data.low52 ?? MARKET_SNAPSHOT.low52,
-            high52: data.high52 ?? MARKET_SNAPSHOT.high52,
             status: "LIVE",
+            asOf: data.timestamp ?? new Date().toISOString(),
           });
         }
         // On error/non-LIVE, silently keep whatever we currently have (static or last-good live value)
