@@ -4,7 +4,7 @@ import React from "react";
 import { ShieldCheck, Download } from "lucide-react";
 import { AuditBadge } from "./AuditBadge";
 import { ThemeToggle } from "./ThemeToggle";
-import { BANKING_PEERS, HDFC_FUNDAMENTALS } from "@/data/hdfcData";
+import { BANKING_PEERS, HDFC_FUNDAMENTALS, generateTimeSeries } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
 
 
@@ -30,13 +30,18 @@ interface HeaderProps {
 
 const FY = HDFC_FUNDAMENTALS[HDFC_FUNDAMENTALS.length - 1];
 const PEER = BANKING_PEERS[0];
+const _tech = generateTimeSeries().technical;
+const _cut = new Date(_tech[_tech.length - 1].date).getTime() - 365 * 86400000;
+const LAST_252 = _tech.filter((p) => new Date(p.date).getTime() >= _cut);
+const LOW52 = Math.min(...LAST_252.map((p) => p.low));
+const HIGH52 = Math.max(...LAST_252.map((p) => p.high));
 
 function buildStats(price: number, marketCapCr: number, marketCapUsdBn: number) {
   return [
   {
     label: "52-week range",
-    value: `₹${MARKET_SNAPSHOT.low52.toFixed(2)} — ₹${MARKET_SNAPSHOT.high52.toLocaleString("en-US", { minimumFractionDigits: 2 })}`,
-    sub: `Bonus adjusted · as of ${MARKET_SNAPSHOT.asOfDate}`,
+    value: `₹${LOW52.toFixed(2)} — ₹${HIGH52.toFixed(2)}`,
+    sub: `SIM series, trailing 52 weeks to ${MARKET_SNAPSHOT.asOfDate} · bonus-restated`,
   },
   {
     label: "Market cap",

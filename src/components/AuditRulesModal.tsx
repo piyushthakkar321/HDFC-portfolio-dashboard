@@ -24,7 +24,7 @@ const TIERS: {
     code: "HIST",
     definition:
       "Objective factual data derived without transformation from statutory filings, company annual reports (FY20-FY24), quarterly earnings releases, Reserve Bank of India DBIE publications, or official NSE trade archives.",
-    examples: "Examples: FY24 NII (₹1,08,533 Cr), FY24 PAT (₹60,812 Cr), Actual GNPA (1.24%), Closing Price (₹731.00).",
+    examples: "Examples: FY24 NII (₹1,08,533 Cr), FY24 PAT (₹60,812 Cr), Actual GNPA (1.24%), Closing Price (see header; static input in FROZEN mode).",
     box: "bg-slate-50 border-slate-200",
     titleClass: "text-slate-900",
   },

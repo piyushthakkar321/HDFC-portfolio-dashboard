@@ -58,6 +58,8 @@ export const FundamentalAnalysis: React.FC = () => {
     totalRevenue: f.netRevenue,
     pat: f.pat,
     ppop: f.ppop,
+    ppopAct: isEst(f.fiscalYear) ? null : f.ppop,
+    patAct: isEst(f.fiscalYear) ? null : f.pat,
     provisions: f.provisions,
     isEstimate: isEst(f.fiscalYear),
     // Estimate-only series: null for actual years so the dashed "estimate" line
@@ -239,9 +241,9 @@ export const FundamentalAnalysis: React.FC = () => {
                       formatter={(val: any) => [`₹${Number(val).toLocaleString("en-IN")} Cr`]}
                     />
                     <Legend wrapperStyle={{ fontSize: "11px", paddingTop: "8px" }} />
-                    <Line type="monotone" dataKey="ppop" name="PPOP (Operating Profit)" stroke="#1d4ed8" strokeWidth={2.5} connectNulls={false} data={revenueData.filter((d) => !d.isEstimate)} />
+                    <Line type="monotone" dataKey="ppopAct" name="PPOP (Operating Profit)" stroke="#1d4ed8" strokeWidth={2.5} connectNulls={false} />
                     <Line type="monotone" dataKey="ppopEst" name="PPOP (FY25E estimate)" stroke="#1d4ed8" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} legendType="none" />
-                    <Line type="monotone" dataKey="pat" name="Net Profit (PAT)" stroke="#059669" strokeWidth={2.5} connectNulls={false} data={revenueData.filter((d) => !d.isEstimate)} />
+                    <Line type="monotone" dataKey="patAct" name="Net Profit (PAT)" stroke="#059669" strokeWidth={2.5} connectNulls={false} />
                     <Line type="monotone" dataKey="patEst" name="PAT (FY25E estimate)" stroke="#059669" strokeWidth={2} strokeDasharray="5 4" dot={{ r: 3 }} legendType="none" />
                     <Line type="monotone" dataKey="provisions" name="Provisions" stroke="#dc2626" strokeWidth={1.5} strokeDasharray="3 3" />
                   </LineChart>
@@ -250,7 +252,7 @@ export const FundamentalAnalysis: React.FC = () => {
               <div className="mt-2 text-[10px] text-slate-500">Dashed segment = FY25E estimate, not audited.</div>
 
               <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
-                <strong className="text-slate-800">Analytical Audit:</strong> FY24 provisions included ₹10,900 Cr of one-time floating / contingent provisions built prudently upon merger consummation, insulating future earnings against systemic credit surprises.
+                <strong className="text-slate-800">Analytical Audit:</strong> FY24 provisions included ₹10,900 Cr of floating / contingent provisions recorded at the merger. Provisions fell in FY25E (₹22,100 Cr).
               </div>
             </div>
           </div>
@@ -374,7 +376,7 @@ export const FundamentalAnalysis: React.FC = () => {
                         {f.fiscalYear}
                       </th>
                     ))}
-                    <th className="py-2 px-3 text-center">5-Year CAGR</th>
+                    <th className="py-2 px-3 text-center">5Y CAGR / change (FY20→FY25E)</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200 font-mono text-slate-800">
@@ -599,7 +601,7 @@ export const FundamentalAnalysis: React.FC = () => {
                   <strong>Asset Turnover Moderation:</strong> Asset turnover contracted from 5.19% to 4.36% post-merger as low-velocity wholesale mortgage assets were brought onto the balance sheet.
                 </li>
                 <li>
-                  <strong>Prudential De-leveraging:</strong> Financial leverage multiplier decreased from 9.53x to 9.16x, proving that HDFC Bank’s balance sheet is more conservatively capitalized today than prior to COVID-19.
+                  <strong>Prudential De-leveraging:</strong> Financial leverage multiplier decreased from 9.53x to 9.16x, indicating lower balance-sheet leverage than before COVID-19.
                 </li>
               </ul>
             </div>
@@ -705,7 +707,7 @@ export const FundamentalAnalysis: React.FC = () => {
               <div className="flex items-center gap-4">
                 <span className="flex items-center gap-1.5 font-semibold text-slate-800">
                   <span className="w-2.5 h-2.5 bg-[#1e3a8a] rounded-full inline-block"></span>
-                  HDFC Bank (P/B 2.12x @ 15.1% ROE — Deep Value vs Historical 3.1x)
+                  HDFC Bank (P/B {BANKING_PEERS[0].pbRatio.toFixed(2)}x @ 15.1% ROE vs 5Y avg 3.1x)
                 </span>
                 <span className="flex items-center gap-1.5 text-slate-600">
                   <span className="w-2.5 h-2.5 bg-[#0284c7] rounded-full inline-block"></span>

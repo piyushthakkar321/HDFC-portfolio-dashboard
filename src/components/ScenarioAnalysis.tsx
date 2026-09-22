@@ -56,8 +56,8 @@ export const ScenarioAnalysis: React.FC = () => {
   // User assumptions
   const [loanGrowth, setLoanGrowth] = useState<number>(14.5);
   const [nim, setNim] = useState<number>(3.55);
-  const [creditCostBps, setCreditCostBps] = useState<number>(45);
-  const [costToIncome, setCostToIncome] = useState<number>(39.2);
+  const [creditCostBps, setCreditCostBps] = useState<number>(80);
+  const [costToIncome, setCostToIncome] = useState<number>(39.0);
   const [exitPbMultiple, setExitPbMultiple] = useState<number>(2.45);
   const [horizonYears, setHorizonYears] = useState<number>(3);
   const [transactionCostBps, setTransactionCostBps] = useState<number>(25);
@@ -71,34 +71,33 @@ export const ScenarioAnalysis: React.FC = () => {
 
   // Current baseline from FY24 / FY25E
   const currentPrice = MARKET_SNAPSHOT.price;
-  const baseAdvances = 2484862; // ₹ Cr
-  const baseBvps = 300.4; // ₹ per share (bonus adjusted)
+  const baseAdvances = 2785000; // ₹ Cr, FY25E advances
+  const baseBvps = 344.8; // ₹ per share, FY25E, bonus adjusted
   const sharesOutstandingB = 15.41; // Billion shares post 1:1 bonus
 
   // Dynamic institutional bank valuation model
   const projectedMetrics = useMemo(() => {
-    // 1. Project advances over horizon
-    const futureAdvances = baseAdvances * Math.pow(1 + loanGrowth / 100, horizonYears);
-    // 2. Project NII
-    const futureNii = futureAdvances * (nim / 100);
-    // 3. Project Fee / Other Income (historical ~31% of total net revenue)
-    const futureNetRevenue = futureNii / (1 - 0.31);
-    const futureOtherIncome = futureNetRevenue * 0.31;
-    // 4. Operating Expenses based on Cost-to-Income
-    const futureOpex = futureNetRevenue * (costToIncome / 100);
-    const futurePpop = futureNetRevenue - futureOpex;
-    // 5. Provisions based on credit costs
-    const futureProvisions = futureAdvances * (creditCostBps / 10000);
-    // 6. PBT & PAT (Corporate tax rate 25.17%)
-    const futurePbt = futurePpop - futureProvisions;
-    const futurePat = futurePbt * (1 - 0.2517);
-    // 7. Retained earnings accretion to Net Worth
-    // Payout ratio ~18% dividend, 82% retained
-    const retentionRate = 0.82;
-    const cumulativePatCr = futurePat * horizonYears * 0.85; // approximate compounding curve
-    const retainedEarningsCr = cumulativePatCr * retentionRate;
-    const additionalBvps = (retainedEarningsCr / (sharesOutstandingB * 100)); // Cr to per share
-    const projectedBvps = baseBvps + additionalBvps;
+    // Year-by-year roll-forward from FY25E: opening BVPS + retained PAT per share
+    const payoutRatio = 0.18; // assumption
+    let bvps = baseBvps;
+    let futureAdvances = baseAdvances;
+    let futureNii = 0;
+    let futureNetRevenue = 0;
+    let futureOtherIncome = 0;
+    let futurePpop = 0;
+    let futureProvisions = 0;
+    let futurePat = 0;
+    for (let y = 1; y <= horizonYears; y++) {
+      futureAdvances = baseAdvances * Math.pow(1 + loanGrowth / 100, y);
+      futureNii = futureAdvances * (nim / 100); // NIM applied to advances: see FU-05
+      futureNetRevenue = futureNii / (1 - 0.31); // other income ~31% of net revenue
+      futureOtherIncome = futureNetRevenue * 0.31;
+      futurePpop = futureNetRevenue * (1 - costToIncome / 100);
+      futureProvisions = futureAdvances * (creditCostBps / 10000);
+      futurePat = (futurePpop - futureProvisions) * (1 - 0.2517);
+      bvps += (futurePat * (1 - payoutRatio)) / (sharesOutstandingB * 100); // Cr per Cr shares
+    }
+    const projectedBvps = bvps;
     // 8. Fair Value Stock Target Price
     const targetStockPrice = projectedBvps * exitPbMultiple;
     const upsidePct = ((targetStockPrice - currentPrice) / currentPrice) * 100;
@@ -122,6 +121,7 @@ export const ScenarioAnalysis: React.FC = () => {
       targetStockPrice,
       upsidePct,
       projectedIrr,
+      constantMultiplePrice: currentPrice * (projectedBvps / baseBvps), // price if P/B stayed at today's multiple
       activeCagr,
       passiveCagr,
       activeTerminalWealth,
@@ -175,8 +175,8 @@ export const ScenarioAnalysis: React.FC = () => {
     if (preset === "base") {
       setLoanGrowth(14.5);
       setNim(3.55);
-      setCreditCostBps(45);
-      setCostToIncome(39.2);
+      setCreditCostBps(80);
+      setCostToIncome(39.0);
       setExitPbMultiple(2.45);
       setHorizonYears(3);
       setTransactionCostBps(25);
@@ -297,7 +297,7 @@ export const ScenarioAnalysis: React.FC = () => {
             onClick={() => applyPreset("base")}
             className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 rounded font-bold transition"
           >
-            Base Case (Consensus)
+            Base Case (Assumption set)
           </button>
           <button
             onClick={() => applyPreset("bull")}
@@ -363,7 +363,7 @@ export const ScenarioAnalysis: React.FC = () => {
             <span className="text-slate-500 text-xs">P/B: {exitPbMultiple.toFixed(2)}x</span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Base BVPS: ₹{baseBvps.toFixed(2)} (Bonus Adj)
+            Base BVPS: ₹{baseBvps.toFixed(2)} (FY25E, bonus adj.)
           </span>
         </div>
 
@@ -446,7 +446,7 @@ export const ScenarioAnalysis: React.FC = () => {
               />
               <div className="flex justify-between text-[10px] text-slate-400 font-sans">
                 <span>8.0% (Credit Crunch)</span>
-                <span>14.5% (Consensus)</span>
+                <span>14.5% (Analyst assumption; FY25E table shows 12.1%)</span>
                 <span>24.0% (Super-Cycle)</span>
               </div>
             </div>
@@ -498,7 +498,7 @@ export const ScenarioAnalysis: React.FC = () => {
               />
               <div className="flex justify-between text-[10px] text-slate-400 font-sans">
                 <span>20 bps (Pristine Quality)</span>
-                <span>45 bps (Historical Mean)</span>
+                <span>80 bps (FY25E provisions ÷ advances; FY20–25 mean ≈ 103)</span>
                 <span>120 bps (Stressed Cycle)</span>
               </div>
             </div>
@@ -524,7 +524,7 @@ export const ScenarioAnalysis: React.FC = () => {
               />
               <div className="flex justify-between text-[10px] text-slate-400 font-sans">
                 <span>35.0% (High Productivity)</span>
-                <span>39.2% (FY24 Actual)</span>
+                <span>39.0% (FY25E; FY24 actual 40.2%)</span>
                 <span>46.0% (Branch Expansion Surge)</span>
               </div>
             </div>
@@ -728,7 +728,7 @@ export const ScenarioAnalysis: React.FC = () => {
             <li>NIM below {(nim - 0.25).toFixed(2)}% for two consecutive quarters.</li>
             <li>Credit cost above {creditCostBps + 30} bps on a trailing-four-quarter basis.</li>
             <li>Loan growth below {(loanGrowth - 3).toFixed(1)}% p.a. for two consecutive quarters.</li>
-            <li>Sector P/B re-rates below {(exitPbMultiple - 0.4).toFixed(2)}x, the level that removes the upside.</li>
+            <li>Exit P/B below {(currentPrice / projectedMetrics.projectedBvps).toFixed(2)}x (break-even: current price ÷ projected BVPS) removes the upside.</li>
           </ul>
         </div>
       </div>
@@ -838,8 +838,7 @@ export const ScenarioAnalysis: React.FC = () => {
                 <tr>
                   <td colSpan={9} className="py-6 px-3 text-center font-sans text-slate-500">
                     No saved scenarios returned. Use the preset buttons above for the Base, Bull, Bear and Stress
-                    reference cases. If the store should already contain them, check DATABASE_URL and run
-                    drizzle-kit push.
+                    reference cases. If you expect saved scenarios here, contact your administrator.
                   </td>
                 </tr>
               )}

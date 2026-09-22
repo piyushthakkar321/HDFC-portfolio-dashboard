@@ -96,7 +96,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               <AuditBadge type="INTERPRETATION" customText="INTP" />
             </div>
             <p className="text-xs text-slate-300 mt-0.5">
-              Current Mandate Recommendation: <strong className="text-emerald-400">OVERWEIGHT</strong> (+450 bps vs Nifty Bank benchmark weight). Rationale: post-merger valuation compression. The factor scorecard below shows the rules behind this signal.
+              Illustrative Model Signal (not validated): <strong className="text-emerald-400">OVERWEIGHT</strong> (+450 bps vs Nifty Bank benchmark weight). Rationale: post-merger valuation compression. The factor scorecard below shows the rules behind this signal.
             </p>
           </div>
         </div>
@@ -139,7 +139,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
               <span className="font-semibold text-slate-700">{formatCur((METRICS.terminal.passive / INITIAL_CAPITAL) * 100)}</span>
             </div>
             <div className="text-right">
-              <span className="text-slate-400 block text-[10px]">ALPHA WEALTH</span>
+              <span className="text-slate-400 block text-[10px]">ACTIVE − PASSIVE WEALTH</span>
               <span className="font-bold text-emerald-700">+{formatCur(((METRICS.terminal.active - METRICS.terminal.passive) / INITIAL_CAPITAL) * 100)}</span>
             </div>
           </div>
@@ -336,7 +336,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <span>•</span>
             <span>Factor tilts +{ALPHA_BRIDGE.factor.toFixed(2)}</span>
             <span>•</span>
-            <span>Selection &amp; interaction (balancing item) +{ALPHA_BRIDGE.selection.toFixed(2)}</span>
+            <span>Selection &amp; interaction (residual, not decomposed) +{ALPHA_BRIDGE.selection.toFixed(2)}</span>
             <span>•</span>
             <span>Gross +{ALPHA_BRIDGE.gross.toFixed(2)}</span>
             <span>•</span>
@@ -404,7 +404,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
 
           <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
-            <strong className="text-slate-800">Analytical Audit:</strong> Provision Coverage Ratio (PCR) consistently exceeds 73.0%. Post-merger addition of wholesale real estate and corporate loans from HDFC Ltd resulted in negligible delinquency spillover, affirming underwriting robustness.
+            <strong className="text-slate-800">Analytical Audit:</strong> Provision Coverage Ratio was reported at about 74.0% in FY24 and 67.86% in FY25 (verify against HDFC Bank filings). Gross NPA remains within the model threshold of 1.50%.
           </div>
         </div>
 
@@ -477,7 +477,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
           </div>
 
           <div className="mt-3 text-xs text-slate-600 bg-slate-50 p-2.5 rounded border border-slate-200">
-            <strong className="text-slate-800">Prudential Buffer:</strong> HDFC Bank holds an 830 bps solvency buffer over the RBI mandatory 11.50% total capital requirement, insulating the institution against adverse macro credit cycles without requiring equity dilution.
+            <strong className="text-slate-800">Prudential Buffer:</strong> HDFC Bank holds an 830 bps solvency buffer over the RBI mandatory 11.50% total capital requirement, above the RBI minimum. Buffer is a point-in-time model input.
           </div>
         </div>
       </div>
@@ -492,7 +492,7 @@ export const ExecutiveOverview: React.FC<ExecutiveOverviewProps> = ({
             <AuditBadge type="SIMULATED" />
           </div>
           <span className="text-xs text-slate-500 font-mono">
-            Rf = 6.80% (assumed 10Y G-Sec yield; source to be attached)
+            Assumption: Rf = 6.80% p.a. (approximate 10Y G-Sec yield, not tied to a dated print)
           </span>
         </div>
 

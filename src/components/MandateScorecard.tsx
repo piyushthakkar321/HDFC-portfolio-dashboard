@@ -30,10 +30,10 @@ function buildFactors(): Factor[] {
   const rsi = tech[tech.length - 1]?.rsi ?? 50;
 
   return [
-    { factor: "P/B ratio", current: `${hdfc.pbRatio.toFixed(2)}x`, rule: "< 2.50x", signal: hdfc.pbRatio < 2.5 ? "PASS" : "FAIL", weight: 25 },
-    { factor: "ROE (FY25E)", current: `${fy.roe.toFixed(2)}%`, rule: "> 14.00%", signal: fy.roe > 14 ? "PASS" : "FAIL", weight: 25 },
-    { factor: "Gross NPA (FY25E)", current: `${fy.gnpa.toFixed(2)}%`, rule: "< 1.50%", signal: fy.gnpa < 1.5 ? "PASS" : "FAIL", weight: 20 },
-    { factor: "NIM (FY25E)", current: `${fy.nim.toFixed(2)}%`, rule: "> 3.50%", signal: fy.nim > 3.5 ? "PASS" : "FAIL", weight: 15 },
+    { factor: "P/B ratio", current: `${hdfc.pbRatio.toFixed(2)}x`, rule: `< 2.50x (margin ${(2.5 - hdfc.pbRatio).toFixed(2)}x)`, signal: hdfc.pbRatio < 2.5 ? "PASS" : "FAIL", weight: 25 },
+    { factor: "ROE (FY25E)", current: `${fy.roe.toFixed(2)}%`, rule: `> 14.00% (margin ${(fy.roe - 14).toFixed(2)} pp)`, signal: fy.roe > 14 ? "PASS" : "FAIL", weight: 25 },
+    { factor: "Gross NPA (FY25E)", current: `${fy.gnpa.toFixed(2)}%`, rule: `< 1.50% (margin ${(1.5 - fy.gnpa).toFixed(2)} pp)`, signal: fy.gnpa < 1.5 ? "PASS" : "FAIL", weight: 20 },
+    { factor: "NIM (FY25E)", current: `${fy.nim.toFixed(2)}%`, rule: `> 3.50% (margin ${(fy.nim - 3.5).toFixed(2)} pp)`, signal: fy.nim > 3.5 ? "PASS" : "FAIL", weight: 15 },
     {
       factor: "RSI (14, simulated series)",
       current: rsi.toFixed(1),
@@ -42,7 +42,7 @@ function buildFactors(): Factor[] {
       weight: 10,
     },
     {
-      factor: "1-day price change",
+      factor: "1-day price change (short-term overlay)",
       current: `${MARKET_SNAPSHOT.changePct >= 0 ? "+" : "−"}${Math.abs(MARKET_SNAPSHOT.changePct).toFixed(2)}%`,
       rule: "> 0%",
       signal: MARKET_SNAPSHOT.changePct > 0 ? "PASS" : "FAIL",
@@ -62,7 +62,7 @@ export const MandateScorecard: React.FC = () => {
         <div>
           <div className="flex items-center gap-2">
             <h3 className="text-sm font-bold uppercase tracking-wide text-slate-900">
-              Mandate signal: factor scorecard
+              Illustrative rule score (not validated)
             </h3>
             <AuditBadge type="INTERPRETATION" />
           </div>
@@ -72,7 +72,7 @@ export const MandateScorecard: React.FC = () => {
           </p>
         </div>
         <div className="text-right">
-          <span className="block text-[10px] uppercase tracking-wider text-slate-500">Composite score</span>
+          <span className="block text-[10px] uppercase tracking-wider text-slate-500">Illustrative rule score</span>
           <span className="font-mono text-lg font-bold text-slate-900">{score.toFixed(1)} / 100</span>
           <span className="ml-2 rounded-md border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-bold text-blue-800">
             {rating}

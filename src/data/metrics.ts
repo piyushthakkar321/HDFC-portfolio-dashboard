@@ -73,6 +73,17 @@ export const METRICS = {
 
 export const NET_ALPHA = INPUT.netAlpha;
 export const FRICTION_DRAG = INPUT.frictionDrag;
+
+// Cost bridge inputs (one source of truth for every screen)
+export const TURNOVER_PCT = { active: 14.2, passive: 2.1 }; // % of NAV, sum of lesser of buys and sells
+export const TXN_COST_BPS_PER_LEG = 25; // assumption
+// Round-trip transaction drag = turnover x 2 legs x cost per leg
+export const TXN_DRAG_PCT = (TURNOVER_PCT.active / 100) * 2 * (TXN_COST_BPS_PER_LEG / 100);
+// Residual to reach the modelled 0.66%: assumed fees and other, no source attached
+export const FEE_AND_OTHER_DRAG_PCT = INPUT.frictionDrag - TXN_DRAG_PCT;
+// Passive: tracking difference vs Nifty Bank = TER + residual (transaction, cash, dividend lag)
+export const PASSIVE_TER_PCT = 0.15; // assumed ETF TER
+export const PASSIVE_OTHER_DRAG_PCT = Math.abs(cagrPassive - cagrBenchmark) - PASSIVE_TER_PCT;
 export const GROSS_ALPHA = INPUT.netAlpha + INPUT.frictionDrag;
 
 // Alpha bridge: the balancing item is explicit, never hidden.
@@ -90,4 +101,4 @@ export const sgn = (n: number, d = 2) => `${n >= 0 ? "+" : "−"}${Math.abs(n).t
 export const pct = (n: number, d = 2) => `${n.toFixed(d)}%`;
 export const spct = (n: number, d = 2) => `${sgn(n, d)}%`;
 export const pp = (n: number, d = 2) => `${sgn(n, d)} pp`;
-export const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-US")}`;
+export const inr = (n: number) => `₹${Math.round(n).toLocaleString("en-IN")}`;

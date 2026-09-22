@@ -35,7 +35,7 @@ export const ArchitecturalExtraction: React.FC = () => {
             <h2 className="text-base font-bold text-slate-900 tracking-tight uppercase">
               Senior Institutional Architect Specification & Requirements Extraction
             </h2>
-            <AuditBadge type="HISTORICAL_OBSERVATION" customText="SELF-ASSESSED" />
+            <AuditBadge type="INTERPRETATION" customText="DESIGN INTENT" />
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Formal institutional deliverable executing Steps 1 through 6: Extract requirements, identify missing data, define calculations, specify interactive controls, and prescribe final presentation modules.
@@ -44,7 +44,7 @@ export const ArchitecturalExtraction: React.FC = () => {
 
         <div className="flex items-center gap-2 text-xs font-mono">
           <span className="px-2.5 py-1 bg-amber-50 text-amber-800 rounded font-bold border border-amber-200">
-            STATUS: SELF-ASSESSED · SEE AUDIT FLAGS
+            DESIGN INTENT · NOT INDEPENDENTLY VERIFIED
           </span>
         </div>
       </div>
@@ -149,7 +149,7 @@ export const ArchitecturalExtraction: React.FC = () => {
                   <div className="mt-2.5 pl-2 text-xs text-slate-600 leading-relaxed border-l-2 border-slate-200 font-sans">
                     <p>{item.details}</p>
                     <div className="mt-1 text-[11px] font-mono text-slate-400">
-                      Benchmark Reference: <span className="text-slate-600">{item.institutionalStandard}</span>
+                      Internal design reference: <span className="text-slate-600">{item.institutionalStandard}</span>
                     </div>
                   </div>
                 )}

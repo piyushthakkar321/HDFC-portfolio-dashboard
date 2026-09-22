@@ -1,5 +1,5 @@
 import { MARKET_SNAPSHOT, MARKET_CAP_CR } from "./marketSnapshot";
-import { METRICS, NET_ALPHA, RISK_FREE, PERIOD_YEARS, FRICTION_DRAG, GROSS_ALPHA, inr, pct, pp, sgn, spct } from "./metrics";
+import { METRICS, NET_ALPHA, RISK_FREE, PERIOD_YEARS, FRICTION_DRAG, GROSS_ALPHA, TXN_DRAG_PCT, FEE_AND_OTHER_DRAG_PCT, inr, pct, pp, sgn, spct } from "./metrics";
 
 // Institutional Data Store for HDFC Bank — Active vs Passive Portfolio Management
 // All data derived from Audited Annual Reports (FY20-FY24), Q3 FY25 Disclosures, NSE Historical Trading Records, and RBI DBIE.
@@ -91,7 +91,7 @@ export interface StrategyPerformancePoint {
   activeDrawdown: number; // %
   passiveDrawdown: number; // %
   benchmarkDrawdown: number; // %
-  rollingAlpha1Y: number; // %
+  rollingAlpha1Y: number | null; // %, null until 365 days of history exist
   trackingDifference: number; // %
 }
 
@@ -698,7 +698,7 @@ function buildTimeSeries(): {
           activeDrawdown,
           passiveDrawdown,
           benchmarkDrawdown,
-          rollingAlpha1Y: Math.round((2.15 + pseudoRand1 * 0.4) * 100) / 100,
+          rollingAlpha1Y: null, // filled in calibratePerformance from the series itself
           trackingDifference: Math.round(((passivePortfolioVal / 100) - (niftyBankPrice / 31200)) * 10000) / 100,
         });
       }
@@ -754,12 +754,25 @@ function calibratePerformance(perf: StrategyPerformancePoint[]): StrategyPerform
   const sA = scale("activeDrawdown", METRICS.mdd.active);
   const sP = scale("passiveDrawdown", METRICS.mdd.passive);
   const sB = scale("benchmarkDrawdown", METRICS.mdd.benchmark);
-  return calibrated.map((p) => ({
+  const scaled = calibrated.map((p) => ({
     ...p,
     activeDrawdown: r2(p.activeDrawdown * sA),
     passiveDrawdown: r2(p.passiveDrawdown * sP),
     benchmarkDrawdown: r2(p.benchmarkDrawdown * sB),
   }));
+  // Rolling 1Y active return spread vs Nifty Bank, computed from the series (365-day look-back)
+  const DAY = 86400000;
+  const firstT = new Date(scaled[0].date).getTime();
+  let j = 0;
+  return scaled.map((p, i) => {
+    const target = new Date(p.date).getTime() - 365 * DAY;
+    if (firstT > target) return { ...p, rollingAlpha1Y: null };
+    while (j + 1 < i && new Date(scaled[j + 1].date).getTime() <= target) j++;
+    const s = scaled[j];
+    const act = (p.activePortfolio / s.activePortfolio - 1) * 100;
+    const ben = (p.benchmarkNiftyBank / s.benchmarkNiftyBank - 1) * 100;
+    return { ...p, rollingAlpha1Y: r2(act - ben) };
+  });
 }
 
 // The simulated price path is rescaled so its last close equals the single global reference price.
@@ -816,6 +829,7 @@ export interface TearSheetMetric {
   benchmarkNiftyBank: string | number;
   deltaVsPassive: string | number;
   badge: "CALCULATED_METRIC" | "HISTORICAL_OBSERVATION" | "SCENARIO_ASSUMPTION" | "INTERPRETATION" | "SIMULATED" | "ESTIMATE";
+  favourable?: boolean; // false = the delta is adverse for the active strategy (higher TE, turnover, friction)
   formulaExplanation: string;
 }
 
@@ -892,7 +906,7 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: M.ir.active.toFixed(2),
     passiveStrategy: M.ir.passive.toFixed(2),
     benchmarkNiftyBank: "N/A",
-    deltaVsPassive: sgn(M.ir.active - M.ir.passive),
+    deltaVsPassive: "N/A (IR is defined vs the benchmark only)",
     badge: "SIMULATED",
     formulaExplanation: `IR = net alpha ÷ tracking error. Active: ${NET_ALPHA.toFixed(2)}% ÷ ${M.te.active.toFixed(2)}% = ${M.ir.active.toFixed(2)}. Passive: (${M.cagr.passive.toFixed(2)}% − ${M.cagr.benchmark.toFixed(2)}%) ÷ ${M.te.passive.toFixed(2)}% = ${M.ir.passive.toFixed(2)}. Both use the ${PERIOD_YEARS}-year window, annualised.`,
   },
@@ -933,7 +947,8 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     activeStrategy: pct(M.te.active),
     passiveStrategy: pct(M.te.passive),
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: "+3.64 pp",
+    deltaVsPassive: pp(M.te.active - M.te.passive),
+    favourable: false,
     badge: "SCENARIO_ASSUMPTION",
     formulaExplanation:
       "Standard deviation of (R_portfolio − R_benchmark), annualised. Active carries a targeted active-risk budget; Passive minimizes tracking error.",
@@ -955,6 +970,7 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     passiveStrategy: "2.10%",
     benchmarkNiftyBank: "N/A",
     deltaVsPassive: "+12.10 pp",
+    favourable: false,
     badge: "SCENARIO_ASSUMPTION",
     formulaExplanation: "Sum of the lesser of buys and sells divided by average mandate NAV. Stored model input.",
   },
@@ -962,10 +978,11 @@ export const INSTITUTIONAL_TEARSHEET: TearSheetMetric[] = [
     metric: "Total Fee & Execution Friction Drag",
     category: "Execution & Cost",
     activeStrategy: `${FRICTION_DRAG.toFixed(2)}% p.a.`,
-    passiveStrategy: "0.22% p.a.",
+    passiveStrategy: `${Math.abs(M.td.passive).toFixed(2)}% p.a.`,
     benchmarkNiftyBank: "0.00%",
-    deltaVsPassive: pp(FRICTION_DRAG - 0.22),
+    deltaVsPassive: pp(FRICTION_DRAG - Math.abs(M.td.passive)),
+    favourable: false,
     badge: "SCENARIO_ASSUMPTION",
-    formulaExplanation: `Same friction figure used in the alpha bridge (gross ${GROSS_ALPHA.toFixed(2)}% − friction ${FRICTION_DRAG.toFixed(2)}% = net ${NET_ALPHA.toFixed(2)}%). At 14.2% annual turnover and 25 bps per trade, direct transaction cost is under 0.1% p.a.; the remainder of the ${FRICTION_DRAG.toFixed(2)}% is management fee / TER drag, shown together here as one total.`,
+    formulaExplanation: `Same friction figure used in the alpha bridge (gross ${GROSS_ALPHA.toFixed(2)}% − friction ${FRICTION_DRAG.toFixed(2)}% = net ${NET_ALPHA.toFixed(2)}%). Bridge: transaction cost ${TXN_DRAG_PCT.toFixed(2)}% (14.2% turnover × 2 legs × 25 bps) + assumed fees and other ${FEE_AND_OTHER_DRAG_PCT.toFixed(2)}% (residual, no source attached) = ${FRICTION_DRAG.toFixed(2)}%. Passive friction is the tracking difference vs Nifty Bank.`,
   },
 ];

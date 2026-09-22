@@ -44,9 +44,11 @@ export const DataIntegrityBar: React.FC<DataIntegrityBarProps> = ({ benchmark })
     { label: "Price", value: `₹${MARKET_SNAPSHOT.price.toFixed(2)} · ${MARKET_SNAPSHOT.status === "LIVE" ? "LIVE" : "STATIC"}`, tone: MARKET_SNAPSHOT.status === "LIVE" ? "ok" : "warn" },
     { label: "Technical series", value: `Simulated · through ${dataThrough()}`, tone: "info" },
     { label: "Financials", value: "FY20–FY24 reported · FY25E estimate", tone: "warn" },
-    { label: "Performance", value: "Illustrative model inputs", tone: "info" },
+    { label: "Performance", value: "SIMULATED · illustrative model inputs", tone: "info" },
     { label: "Benchmark", value: `Mandate: Nifty Bank · chart comparator: ${comparator}`, tone: "ok" },
-    { label: "Checks", value: `${passed}/${checks.length} reconciled`, tone: allPass ? "ok" : "warn" },
+    { label: "Internal consistency checks", value: `${passed}/${checks.length} formula checks pass`, tone: allPass ? "ok" : "warn" },
+    { label: "Source integrity", value: "Not independently verified (external figures unconfirmed)", tone: "warn" },
+    { label: "Simulation status", value: "Technical and performance series SIMULATED", tone: "info" },
   ];
 
   return (
@@ -82,7 +84,7 @@ export const DataIntegrityBar: React.FC<DataIntegrityBarProps> = ({ benchmark })
         <div className="mt-4 space-y-5 border-t border-slate-200 pt-4 text-xs">
           <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
             <div>
-              <h4 className="mb-2 font-bold text-slate-900">Reconciliation checks (computed on load)</h4>
+              <h4 className="mb-2 font-bold text-slate-900">Internal consistency checks (formula-level, not source verification)</h4>
               <ul className="space-y-1.5">
                 {checks.map((c) => (
                   <li key={c.id} className="flex items-start gap-2">

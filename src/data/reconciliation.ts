@@ -59,7 +59,7 @@ export function runReconciliationChecks(): CheckResult[] {
     id: "cagr",
     label: "CAGR reproduces terminal value",
     pass: Math.abs(back / METRICS.terminal.active - 1) < 0.001,
-    detail: `${METRICS.cagr.active.toFixed(2)}% over ${PERIOD_YEARS} yrs → ₹${Math.round(back).toLocaleString("en-US")}`,
+    detail: `${METRICS.cagr.active.toFixed(2)}% over ${PERIOD_YEARS} yrs → ₹${Math.round(back).toLocaleString("en-IN")}`,
   });
 
   const perf = generateTimeSeries().performance;
@@ -91,7 +91,7 @@ export function runReconciliationChecks(): CheckResult[] {
     id: "mcap",
     label: "Market cap = price × shares",
     pass: hdfc.marketCapCr === MARKET_CAP_CR,
-    detail: `₹${MARKET_SNAPSHOT.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-US")} Cr shares = ₹${MARKET_CAP_CR.toLocaleString("en-IN")} Cr`,
+    detail: `₹${MARKET_SNAPSHOT.price.toFixed(2)} × ${MARKET_SNAPSHOT.sharesOutstandingCr.toLocaleString("en-IN")} Cr shares = ₹${MARKET_CAP_CR.toLocaleString("en-IN")} Cr`,
   });
 
   return results;

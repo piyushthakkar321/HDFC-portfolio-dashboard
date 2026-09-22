@@ -36,7 +36,7 @@ export const BADGE_CONFIG: Record<
     bg: "bg-blue-50",
     text: "text-blue-700",
     border: "border-blue-200",
-    desc: "Deterministically computed metric using verified formulas (e.g., Sharpe, Beta, Jensen's Alpha, Tracking Error, DuPont ROE, 200 DMA) from underlying factual series.",
+    desc: "Deterministically computed metric using verified formulas (e.g., DuPont ROE) from underlying factual series. A metric computed from a simulated series (e.g., Sharpe, Beta, Jensen's Alpha, Tracking Error, 200 DMA) is tagged SIMULATED instead, per the weakest-input rule.",
   },
   SCENARIO_ASSUMPTION: {
     label: "Scenario Assumption",
@@ -71,6 +71,19 @@ export const BADGE_CONFIG: Record<
     desc: "Forward-looking or consensus figure (for example FY25E). It is a model estimate and has not been audited or reported by the company.",
   },
 };
+
+// DL-10 / acceptance test 7: a derived metric inherits the weakest input tag.
+const STRENGTH: ClassificationType[] = [
+  "HISTORICAL_OBSERVATION",
+  "ESTIMATE",
+  "CALCULATED_METRIC",
+  "SCENARIO_ASSUMPTION",
+  "INTERPRETATION",
+  "SIMULATED",
+];
+export function weakestTag(...inputs: ClassificationType[]): ClassificationType {
+  return inputs.reduce((worst, t) => (STRENGTH.indexOf(t) > STRENGTH.indexOf(worst) ? t : worst), inputs[0]);
+}
 
 export const AuditBadge: React.FC<AuditBadgeProps> = ({
   type,

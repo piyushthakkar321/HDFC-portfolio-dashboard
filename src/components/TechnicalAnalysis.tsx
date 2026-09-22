@@ -52,7 +52,7 @@ export const TechnicalAnalysis: React.FC = () => {
   }, [data, timeRange]);
 
   const latestPoint = data[data.length - 1] || {
-    close: 731.0,
+    close: MARKET_SNAPSHOT.price,
     dma20: 724.5,
     dma50: 718.2,
     dma200: 708.2,
@@ -66,7 +66,7 @@ export const TechnicalAnalysis: React.FC = () => {
   const dmaGapPct = ((latestPoint.close - latestPoint.dma200) / latestPoint.dma200) * 100;
   const aboveDma = dmaGapPct >= 0;
   const rsiZone =
-    latestPoint.rsi > 70 ? "OVERBOUGHT" : latestPoint.rsi < 30 ? "OVERSOLD" : latestPoint.rsi >= 50 ? "NEUTRAL · BULLISH BIAS" : "NEUTRAL · BEARISH BIAS";
+    latestPoint.rsi > 70 ? "OVERBOUGHT" : latestPoint.rsi < 30 ? "OVERSOLD" : "NEUTRAL";
   const macdAbove = latestPoint.macd >= latestPoint.macdSignal;
 
   // Technical Pivots (Standard Floor Pivot Equations)
@@ -166,7 +166,7 @@ export const TechnicalAnalysis: React.FC = () => {
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            {aboveDma ? "Price is above the 200 DMA" : "Price is below the 200 DMA: long-term support tested"}
+            {aboveDma ? "Price is above the 200 DMA" : `Price is ${Math.abs(dmaGapPct).toFixed(1)}% below the 200 DMA`}
           </span>
         </div>
 

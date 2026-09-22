@@ -157,7 +157,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ activeTab, setActiveTab }) => 
               <span>Demo build · not GIPS-verified</span>
             </div>
             <div className="mt-1 text-slate-500">
-              Rf 6.80% (assumed)
+              {COMPLIANCE.riskFreeSource}
               <br />
               SEBI Reg: {COMPLIANCE.sebiRegistration}
             </div>

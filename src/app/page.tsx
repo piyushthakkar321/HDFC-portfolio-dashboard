@@ -76,7 +76,7 @@ export default function DashboardPage() {
 
           <p className="mt-3 border-t border-slate-100 pt-3 text-[10px] leading-relaxed text-slate-400">
             CONFIDENTIAL & PROPRIETARY — FOR INSTITUTIONAL ASSET MANAGEMENT & INVESTMENT COMMITTEE USE ONLY. NOT FOR
-            PUBLIC DISTRIBUTION. Historical calculations use audited financial statements and official NSE trade logs.
+            PUBLIC DISTRIBUTION. Fundamentals are from company reports (FY25 is an estimate). Price, technical and performance series are simulated and labelled as such; none is presented as historical NSE data.
             Forward-looking scenario projections represent mathematical simulations under specified user assumptions and
             do not constitute statutory guarantees or solicitation.
           </p>

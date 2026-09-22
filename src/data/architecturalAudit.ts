@@ -274,7 +274,7 @@ export const ARCHITECTURAL_AUDIT_DATA: AuditRequirementSection[] = [
       {
         code: "SHOW-01",
         label: "Executive Overview Header & Ticker Tape",
-        details: "CMP ₹731.00, Day Change, 52W High ₹1020.50 / Low ₹681.90, MCap ₹11.26T, P/E 15.97x, P/B 2.12x, Div Yield 1.78%, Nifty Bank Weight 29.45%, Recommendation Overweight.",
+        details: "CMP, Day Change, 52W High/Low, MCap, P/E, P/B (all computed from the single market snapshot), Div Yield 1.78%, Nifty Bank Weight 29.45%, Recommendation Overweight.",
         status: "Verified",
         institutionalStandard: "Top-Tier Workstation Master Header",
       },
@@ -333,7 +333,7 @@ export const ARCHITECTURAL_AUDIT_DATA: AuditRequirementSection[] = [
     id: "step-6-governance",
     stepNumber: 6,
     sectionTitle: "6. Classification Governance & Institutional Integrity",
-    executiveSummary: "Enforcement of institutional truth principles: No fake charts, no fabricated data, full explainability.",
+    executiveSummary: "Enforcement of institutional truth principles: All simulated series are labelled as simulated; none is presented as historical data.",
     items: [
       {
         code: "GOV-01",

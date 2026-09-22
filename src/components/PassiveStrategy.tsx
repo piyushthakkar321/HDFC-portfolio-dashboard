@@ -25,6 +25,7 @@ import {
 } from "recharts";
 import { AuditBadge } from "./AuditBadge";
 import { generateTimeSeries } from "@/data/hdfcData";
+import { METRICS, PASSIVE_TER_PCT, PASSIVE_OTHER_DRAG_PCT, spct } from "@/data/metrics";
 
 export const PassiveStrategy: React.FC = () => {
   const [data] = React.useState(() => generateTimeSeries().performance);
@@ -93,13 +94,13 @@ export const PassiveStrategy: React.FC = () => {
             Cumulative Tracking Difference
           </span>
           <div className="mt-1 flex items-baseline justify-between">
-            <span className="text-lg font-bold text-slate-900">-0.34% p.a.</span>
+            <span className="text-lg font-bold text-slate-900">{spct(METRICS.td.passive)} p.a.</span>
             <span className="text-slate-600 font-bold bg-slate-100 px-1.5 py-0.5 rounded">
-              TER DRAG
+              VS NIFTY BANK
             </span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Comprises 0.15% TER + 0.19% dividend lag
+            {`Assumed TER ${PASSIVE_TER_PCT.toFixed(2)}% + transaction, cash & dividend lag ${PASSIVE_OTHER_DRAG_PCT.toFixed(2)}% (residual)`}
           </span>
         </div>
 
@@ -205,7 +206,7 @@ export const PassiveStrategy: React.FC = () => {
         </div>
 
         <div className="mt-3 p-3 bg-slate-50 rounded border border-slate-200 text-xs text-slate-600">
-          <strong className="text-slate-800">Tracking Error Assessment:</strong> The passive strategy delivers precise index replication with annualized tracking error of 0.28%, well within the institutional mandate ceiling of 0.50%. The cumulative underperformance of 34 bps p.a. is fully explained by the statutory 15 bps TER and rebalancing transaction costs during semi-annual index reconstitution.
+          <strong className="text-slate-800">Tracking Error Assessment:</strong> The passive strategy delivers precise index replication with annualized tracking error of 0.28%, well within the institutional mandate ceiling of 0.50%. The tracking difference of {Math.abs(METRICS.td.passive).toFixed(2)}% p.a. is modelled as an assumed 15 bps ETF TER plus a residual for transaction costs, cash drag and dividend lag. The residual is not separately evidenced.
         </div>
       </div>
 

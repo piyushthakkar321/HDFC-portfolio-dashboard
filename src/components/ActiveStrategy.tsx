@@ -155,7 +155,7 @@ export const ActiveStrategy: React.FC = () => {
             <span className="text-slate-500 text-[11px]">Gross: +2.84%</span>
           </div>
           <span className="text-[11px] text-slate-500 mt-1 block font-sans">
-            Friction Drag: -0.66% (TER + TCA)
+            Modelled friction: −0.66% p.a. = 0.07% transaction (14.2% × 2 × 25 bps) + 0.59% assumed fees/other
           </span>
         </div>
 
@@ -222,7 +222,7 @@ export const ActiveStrategy: React.FC = () => {
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-              Active Tilt: Overweight Quality
+              Active tilt: overweight private lenders (no factor model attached)
             </span>
           </div>
 
@@ -277,7 +277,7 @@ export const ActiveStrategy: React.FC = () => {
             <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
               <div>
                 <span className="font-sans font-bold text-slate-800 block">Securities Transaction Tax (STT)</span>
-                <span className="text-[11px] text-slate-500 font-sans">Statutory delivery duty: 0.1% on each buy and sell leg (verify current rate)</span>
+                <span className="text-[11px] text-slate-500 font-sans">STT on delivery: 0.1% on both buy and sell legs (verify rate and effective date)</span>
               </div>
               <span className="font-bold text-slate-900">10.0 bps</span>
             </div>
@@ -301,13 +301,13 @@ export const ActiveStrategy: React.FC = () => {
             <div className="p-2.5 bg-slate-50 rounded border border-slate-200 flex items-center justify-between">
               <div>
                 <span className="font-sans font-bold text-slate-800 block">Exchange, SEBI & Stamp Duty</span>
-                <span className="text-[11px] text-slate-500 font-sans">NSE charges (0.32 bps) + Stamp duty (1.5 bps)</span>
+                <span className="text-[11px] text-slate-500 font-sans">NSE charges (0.32 bps, both legs) + stamp duty (1.5 bps, buy leg only). Verify rates and dates.</span>
               </div>
               <span className="font-bold text-slate-900">2.0 bps</span>
             </div>
 
             <div className="p-3 bg-blue-50/80 rounded border border-blue-200 flex items-center justify-between text-blue-900 font-bold">
-              <span className="font-sans uppercase">Total friction per leg (one way)</span>
+              <span className="font-sans uppercase">Assumed average friction per leg</span>
               <span className="text-sm">25.0 bps (0.25%)</span>
             </div>
           </div>
@@ -325,7 +325,7 @@ export const ActiveStrategy: React.FC = () => {
               <AuditBadge type="HISTORICAL_OBSERVATION" />
             </div>
             <p className="text-xs text-slate-500 mt-0.5">
-              Live audit trail of portfolio rebalancing triggers, turnover, and realized friction.
+              Audit trail of logged rebalancing events. Turnover and friction figures elsewhere are modelled estimates, not realised.
             </p>
           </div>
 
@@ -393,8 +393,8 @@ export const ActiveStrategy: React.FC = () => {
               {!loading && rebalanceEvents.length === 0 && (
                 <tr>
                   <td colSpan={9} className="py-6 px-3 text-center font-sans text-slate-500">
-                    No rebalancing events recorded. This log is served from PostgreSQL: if you expect events here,
-                    check that DATABASE_URL is set and the tables exist (run drizzle-kit push).
+                    No rebalancing events have been logged. If this store is unavailable, the table will not show
+                    data. Contact your administrator if you expect events here.
                   </td>
                 </tr>
               )}

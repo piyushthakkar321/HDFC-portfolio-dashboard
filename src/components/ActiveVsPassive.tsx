@@ -44,6 +44,8 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
   capitalBase,
 }) => {
   const [data] = useState(() => generateTimeSeries().performance);
+  const rollingVals = data.map((d) => d.rollingAlpha1Y).filter((v): v is number => v !== null);
+  const meanRolling = rollingVals.length ? rollingVals.reduce((a, b) => a + b, 0) / rollingVals.length : 0;
   const [selectedCategory, setSelectedCategory] = useState<string>("ALL");
   const [selectedMetric, setSelectedMetric] = useState<TearSheetMetric | null>(null);
 
@@ -205,7 +207,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                   }}
                   formatter={(val: any, name: any) => [
                     `${val}%`,
-                    name === "activeDrawdown" ? "Active Drawdown" : "Passive Drawdown",
+                    name === "Active" ? "Active Drawdown" : "Passive Drawdown",
                   ]}
                 />
                 <Area
@@ -214,7 +216,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                   stroke="#2563eb"
                   fill="#93c5fd"
                   fillOpacity={0.4}
-                  name="activeDrawdown"
+                  name="Active"
                 />
                 <Area
                   type="monotone"
@@ -222,8 +224,9 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                   stroke="#ef4444"
                   fill="#fca5a5"
                   fillOpacity={0.2}
-                  name="passiveDrawdown"
+                  name="Passive"
                 />
+                <Legend wrapperStyle={{ fontSize: "11px" }} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -235,16 +238,16 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h4 className="text-xs font-bold text-slate-900 uppercase tracking-wide">
-                  Rolling 1-Year Active Alpha (% p.a.)
+                  Rolling 1-Year Active Return Spread vs Nifty Bank (pp)
                 </h4>
                 <AuditBadge type="SIMULATED" />
               </div>
               <span className="text-[11px] text-slate-500">
-                Persistence of manager alpha over rolling 252-day windows
+                Active 1Y return minus Nifty Bank 1Y return, rolling 365-day windows (simulated series)
               </span>
             </div>
             <span className="text-xs font-mono font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-              Avg Alpha: +2.18% p.a.
+              Mean of series: {spct(meanRolling)} pp
             </span>
           </div>
 
@@ -253,8 +256,8 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
               <LineChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
                 <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 10 }} minTickGap={60} />
-                <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={[0, 4]} unit="%" />
-                <ReferenceLine y={2.18} stroke="#10b981" strokeDasharray="3 3" label={{ value: "Mean Alpha (+2.18%)", fill: "#10b981", fontSize: 10 }} />
+                <YAxis stroke="#64748b" tick={{ fontSize: 10 }} domain={["auto", "auto"]} unit="%" />
+                <ReferenceLine y={meanRolling} stroke="#10b981" strokeDasharray="3 3" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#0f172a",
@@ -263,7 +266,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                     fontSize: "12px",
                     color: "#f8fafc",
                   }}
-                  formatter={(val: any) => [`+${val}% p.a.`, "Rolling 1Y Alpha"]}
+                  formatter={(val: any) => [`${val}%`, "Rolling 1Y active spread"]}
                 />
                 <Line
                   type="monotone"
@@ -320,7 +323,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                 <th className="py-2.5 px-3 text-right">Active Strategy</th>
                 <th className="py-2.5 px-3 text-right">Passive Strategy</th>
                 <th className="py-2.5 px-3 text-right">Nifty Bank (mandate benchmark)</th>
-                <th className="py-2.5 px-3 text-right">Active Delta</th>
+                <th className="py-2.5 px-3 text-right">Active Δ vs Passive</th>
                 <th className="py-2.5 px-3 text-center">Classification</th>
               </tr>
             </thead>
@@ -345,7 +348,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
                   <td className="py-2.5 px-3 text-right text-slate-500">
                     {row.benchmarkNiftyBank}
                   </td>
-                  <td className="py-2.5 px-3 text-right font-bold text-emerald-700">
+                  <td className={`py-2.5 px-3 text-right font-bold ${row.favourable === false ? "text-rose-700" : String(row.deltaVsPassive).startsWith("N/A") ? "text-slate-500" : "text-emerald-700"}`}>
                     {row.deltaVsPassive}
                   </td>
                   <td className="py-2.5 px-3 text-center">
@@ -384,7 +387,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
             </div>
             <div>
               <span className="text-slate-400 block text-[10px] uppercase">Active Delta</span>
-              <span className="text-base font-bold text-emerald-400">{selectedMetric.deltaVsPassive}</span>
+              <span className={`text-base font-bold ${selectedMetric.favourable === false ? "text-rose-400" : "text-emerald-400"}`}>{selectedMetric.deltaVsPassive}</span>
             </div>
           </div>
           <div className="pt-2 text-slate-300 leading-relaxed font-sans border-t border-slate-800">
@@ -407,7 +410,7 @@ export const ActiveVsPassive: React.FC<ActiveVsPassiveProps> = ({
             </div>
             <ul className="list-disc ml-5 space-y-1 text-slate-700 leading-relaxed">
               <li>
-                <strong>Valuation Divergence:</strong> When top-tier franchise banks (like HDFC Bank at 2.12x P/B) trade at a discount to historical multiples (3.10x 5Y average).
+                <strong>Valuation Divergence:</strong> When top-tier franchise banks (like HDFC Bank at its current P/B) trade at a discount to historical multiples (3.10x 5Y average).
               </li>
               <li>
                 <strong>Credit Cycle Inflection:</strong> When asset quality divergence between private and PSU lenders creates alpha opportunities.
