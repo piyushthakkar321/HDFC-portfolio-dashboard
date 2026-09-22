@@ -102,18 +102,49 @@ export const Header: React.FC<HeaderProps> = ({
             <span className="h-1.5 w-1.5 rounded-full bg-amber-400" />
             Static reference price ({MARKET_SNAPSHOT.asOfDate}) · simulated series · see Data integrity
           </span>
-          {liveQuote.status === "LIVE" && (
+          {(liveQuote.status === "LIVE" || liveQuote.status === "STALE") && (
             <span
               className="flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[11px] text-slate-300"
-              title={`Live check only — not used in any calculation on this page. Fetched ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : ""}.`}
+              title={`Live check only — not used in any calculation on this page. Fetched ${liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : ""} via ${liveQuote.source ?? "unknown source"}.${liveQuote.errorMessage ? ` Note: ${liveQuote.errorMessage}` : ""}`}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${
+                  liveQuote.status === "LIVE" ? "bg-emerald-400" : "bg-amber-400"
+                }`}
+              />
               Live check: ₹{liveQuote.price.toFixed(2)}
               <span className={liveQuote.changePct >= 0 ? "text-emerald-400" : "text-rose-400"}>
                 ({liveQuote.changePct >= 0 ? "+" : ""}
                 {liveQuote.changePct.toFixed(2)}%)
               </span>
-              <span className="text-slate-500">· for comparison only, not used in calculations</span>
+              {liveQuote.status === "STALE" ? (
+                <span className="text-amber-400">
+                  · stale (no update since {liveQuote.asOf ? new Date(liveQuote.asOf).toLocaleTimeString() : "—"})
+                </span>
+              ) : liveQuote.source && liveQuote.source !== "yahoo" ? (
+                <span className="text-amber-400">· via fallback feed ({liveQuote.source})</span>
+              ) : (
+                <span className="text-slate-500">· for comparison only, not used in calculations</span>
+              )}
+            </span>
+          )}
+
+          {liveQuote.status === "LOADING" && (
+            <span className="flex items-center gap-1.5 rounded-md border border-white/12 bg-white/[0.06] px-2 py-1 text-[11px] text-slate-400">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-slate-400" />
+              Live check: connecting…
+            </span>
+          )}
+
+          {liveQuote.status === "ERROR" && (
+            <span
+              className="flex items-center gap-1.5 rounded-md border border-rose-400/30 bg-rose-500/10 px-2 py-1 text-[11px] text-rose-300"
+              title={liveQuote.errorMessage ?? "Live feed unavailable"}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-rose-400" />
+              Live feed unavailable
+              {liveQuote.consecutiveFailures > 1 ? ` (${liveQuote.consecutiveFailures} failed attempts)` : ""}
+              <span className="text-rose-400/70">· showing static reference price only</span>
             </span>
           )}
         </div>
