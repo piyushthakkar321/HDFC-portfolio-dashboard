@@ -31,6 +31,7 @@ import { AuditBadge } from "./AuditBadge";
 import { generateTimeSeries, MONTHLY_RETURNS, dataThrough, computeYtd } from "@/data/hdfcData";
 import { MARKET_SNAPSHOT } from "@/data/marketSnapshot";
 import { sgn } from "@/data/metrics";
+import { useLiveQuote } from "@/hooks/useLiveQuote";
 
 export const TechnicalAnalysis: React.FC = () => {
   const [data] = useState(() => generateTimeSeries().technical);
@@ -39,6 +40,11 @@ export const TechnicalAnalysis: React.FC = () => {
   const [show200DMA, setShow200DMA] = useState(true);
   const [showVolume, setShowVolume] = useState(true);
   const [timeRange, setTimeRange] = useState<"1Y" | "3Y" | "ALL">("3Y");
+
+  // Live quote drives only the single "latest close" reference point; the
+  // simulated historical series (and its DMAs/RSI/MACD) stays as-is.
+  const liveQuote = useLiveQuote();
+  const isLive = liveQuote.status === "LIVE" || liveQuote.status === "STALE";
 
   // Filter based on time range
   const filteredData = React.useMemo(() => {
@@ -51,7 +57,7 @@ export const TechnicalAnalysis: React.FC = () => {
     return data;
   }, [data, timeRange]);
 
-  const latestPoint = data[data.length - 1] || {
+  const basePoint = data[data.length - 1] || {
     close: MARKET_SNAPSHOT.price,
     dma20: 724.5,
     dma50: 718.2,
@@ -61,6 +67,25 @@ export const TechnicalAnalysis: React.FC = () => {
     macdSignal: 2.1,
     macdHist: 1.3,
   };
+
+  // Splice the live price onto the last simulated bar so the chart's final
+  // point and headline both reflect it, without touching DMA/RSI/MACD math.
+  const latestPoint = isLive ? { ...basePoint, close: liveQuote.price } : basePoint;
+
+  const chartData = React.useMemo(() => {
+    if (!isLive || filteredData.length === 0) return filteredData;
+    const next = filteredData.slice();
+    next[next.length - 1] = { ...next[next.length - 1], close: liveQuote.price };
+    return next;
+  }, [filteredData, isLive, liveQuote.price]);
+
+  const closeAsOfLabel = isLive
+    ? `live${liveQuote.asOf ? ` · ${new Date(liveQuote.asOf).toLocaleTimeString()}` : ""}`
+    : throughDateSafe();
+
+  function throughDateSafe() {
+    return dataThrough();
+  }
 
   const throughDate = dataThrough();
   const dmaGapPct = ((latestPoint.close - latestPoint.dma200) / latestPoint.dma200) * 100;
@@ -74,7 +99,7 @@ export const TechnicalAnalysis: React.FC = () => {
   const lastPoint = data[data.length - 1];
   const lastHigh = lastPoint?.high ?? MARKET_SNAPSHOT.price;
   const lastLow = lastPoint?.low ?? MARKET_SNAPSHOT.price;
-  const lastClose = lastPoint?.close ?? MARKET_SNAPSHOT.price;
+  const lastClose = latestPoint.close;
   const pivot = (lastHigh + lastLow + lastClose) / 3;
   const r1 = 2 * pivot - lastLow;
   const s1 = 2 * pivot - lastHigh;
@@ -94,6 +119,7 @@ export const TechnicalAnalysis: React.FC = () => {
           </div>
           <p className="text-xs text-slate-500 mt-0.5">
             Simulated daily price series (illustrative), data through {throughDate}, anchored to the reference price ₹{MARKET_SNAPSHOT.price.toFixed(2)}. 20/50/200 DMA, 14-period RSI and MACD (12, 26, 9) are computed from it; the monthly return matrix is a separate stored dataset.
+            {isLive && " The latest close and pivot levels below are re-anchored to the live quote; the moving averages and oscillators still reflect the simulated series."}
           </p>
         </div>
 
@@ -224,10 +250,10 @@ export const TechnicalAnalysis: React.FC = () => {
               <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wide">
                 Price Series & Moving Average Envelopes (Bonus Adjusted)
               </h3>
-              <AuditBadge type="SIMULATED" />
+              <AuditBadge type={isLive ? "HISTORICAL_OBSERVATION" : "SIMULATED"} customText={isLive ? "LIVE CLOSE" : undefined} />
             </div>
             <span className="text-xs text-slate-500">
-              Latest close ({throughDate}): ₹{latestPoint.close.toFixed(2)} | 200 DMA: ₹{latestPoint.dma200.toFixed(2)}
+              Latest close ({closeAsOfLabel}): ₹{latestPoint.close.toFixed(2)} | 200 DMA: ₹{latestPoint.dma200.toFixed(2)}
             </span>
           </div>
 
@@ -255,7 +281,7 @@ export const TechnicalAnalysis: React.FC = () => {
 
         <div className="h-72 w-full">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={filteredData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+            <LineChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
               <XAxis dataKey="date" stroke="#64748b" tick={{ fontSize: 11 }} minTickGap={50} />
               <YAxis
